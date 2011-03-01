@@ -4,8 +4,8 @@
 define('ENCRYPTION_KEY', 'Example Key Change Me!');
 
 // OAuth consumer and secret keys. Available from http://twitter.com/oauth_clients
-define('OAUTH_CONSUMER_KEY', '');
-define('OAUTH_CONSUMER_SECRET', '');
+define('OAUTH_CONSUMER_KEY', '4186909475');
+define('OAUTH_CONSUMER_SECRET', 'e9b91b0472f46e07a1b0cc70146cabcc');
 
 // bit.ly login and API key for URL shortening
 define('BITLY_LOGIN', '');

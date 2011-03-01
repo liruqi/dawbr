@@ -285,7 +285,7 @@ function twitter_process($url, $post_data = false) {
         $url = $url . "?";
     else
         $url = $url . "&";
-    $url = $url . "source=appkey";
+    $url = $url . "source=" . OAUTH_CONSUMER_KEY;
   //}
   $url = str_replace("http://twitter.com/", "http://api.t.sina.com.cn/", $url);
 
@@ -1089,24 +1089,10 @@ function theme_status_time_link($status, $is_link = true) {
 }
 
 function twitter_date($format, $timestamp = null) {
-  static $offset;
-  if (!isset($offset)) {
-    if (user_is_authenticated()) {
-      if (array_key_exists('utc_offset', $_COOKIE)) {
-        $offset = $_COOKIE['utc_offset'];
-      } else {
-        $user = twitter_user_info();
-        $offset = $user->utc_offset;
-        setcookie('utc_offset', $offset, time() + 3000000, '/');
-      }
-    } else {
-      $offset = 0;
-    }
-  }
   if (!isset($timestamp)) {
     $timestamp = time();
   }
-  return gmdate($format, $timestamp + $offset);
+  return gmdate($format, $timestamp);
 }
 
 function twitter_standard_timeline($feed, $source) {
