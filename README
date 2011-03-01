@@ -2,16 +2,16 @@ This code was originally hacked by Tim Yang (http://timyang.net/), and once publ
 
 You may still download the orginal version here: http://60.28.113.74:8000/dabr.weibo.tgz
 
-You may try dabr-for-weibo here: http://60.28.113.74:8000/api/
+You may try dabr-for-weibo here: http://liruqi.me/
 
-sample nginx configure:
+Sample nginx configure:
 
 156 server {
 157     listen   80;
 158     server_name  t.liruqi.com;
 159     index index.php;
-160     error_log  /var/log/nginx/proxy.liruqi.com.error.log;
-161     access_log  /var/log/nginx/proxy.liruqi.com.access.log;
+160     error_log  /var/log/nginx/liruqi.me.error.log;
+161     access_log  /var/log/nginx/liruqi.me.access.log;
 162     index  index.php;
 163     if (!-f $request_filename) {
 164         rewrite ^/(.*)$ /index.php?q=$1 last;
