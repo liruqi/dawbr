@@ -2,7 +2,7 @@ table{border-collapse:collapse}
 form{margin:.3em;}
 td{vertical-align:top;padding:0.3em}
 img{border:0}
-body{margin:0;font:90% sans-serif}
+body{margin:0;font-family:sans-serif}
 
 #menu ul, #menu li { margin: 0; padding: 0; list-style: none; }
 #menu ul { overflow: auto; }
@@ -15,6 +15,8 @@ body.show-menu #menu-extras { display: block; }
 #menu-extras a { padding: 0.8em; border-bottom: 1px solid #eee; }
 
 .timeline a img { padding: 1px 2px; }
+
+img.bigger { height: 22px; width: 22px; }
 
 .avatar{display:block; height:50px; width:50px; left:5px; margin:0; overflow:hidden; position:absolute;}
 .shift{margin-left:58px;min-height:48px;}
