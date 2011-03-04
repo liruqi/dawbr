@@ -281,22 +281,21 @@ function twitter_process($url, $post_data = false) {
 	if (user_type() == 'oauth' && ( strpos($url, 'sina.com.cn') !== false ))
 	{
 		user_oauth_sign($url, $post_data);
-        #file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
     }
-    elseif (strpos($url, 'twitter.com') !== false && is_array($post_data)) {
+    elseif (strpos($url, 'api.t.sina.com.cn') !== false && is_array($post_data)) {
     // Passing $post_data as an array to twitter.com (non-oauth) causes an error :(
     $s = array();
     foreach ($post_data as $name => $value)
       $s[] = $name.'='.urlencode($value);
     $post_data = implode('&', $s);
   }
-  //if ($post_data == false) {
+  #if (! isset($post_data['source'])) {
     if (endsWith($url, ".json") || endsWith($url, ".xml"))
         $url = $url . "?";
     else
         $url = $url . "&";
     $url = $url . "source=" . OAUTH_CONSUMER_KEY;
-  //}
+  #}
   $ch = curl_init($url);
 
   if($post_data !== false && !$_GET['page']) {
@@ -313,7 +312,9 @@ function twitter_process($url, $post_data = false) {
   curl_setopt($ch, CURLOPT_USERAGENT, 'dabr');
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-
+  
+  #file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
+  #file_put_contents('/tmp/bt', var_export(debug_backtrace(), true)."\n", FILE_APPEND);
   $response = curl_exec($ch);
   $response_info=curl_getinfo($ch);
   curl_close($ch);
@@ -709,7 +710,7 @@ function twitter_update() {
   $status = twitter_url_shorten(stripslashes(trim($_POST['status'])));
   if ($status) {
     $request = 'http://twitter.com/statuses/update.json';
-    $post_data = array('source' => 'appkey', 'status' => $status);
+    $post_data = array('source' => OAUTH_CONSUMER_KEY, 'status' => $status);
     $in_reply_to_id = (string) $_POST['in_reply_to_id'];
     if (is_numeric($in_reply_to_id)) {
       $post_data['in_reply_to_status_id'] = $in_reply_to_id;
