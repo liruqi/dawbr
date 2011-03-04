@@ -270,10 +270,20 @@ function endsWith( $str, $sub ) {
 }
 
 function twitter_process($url, $post_data = false) {
-  if ($post_data === true) $post_data = array();
-  if (user_type() == 'oauth' && strpos($url, '/twitter.com') !== false) {
-    user_oauth_sign($url, $post_data);
-  } elseif (strpos($url, 'twitter.com') !== false && is_array($post_data)) {
+    $url = str_replace("https://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
+    $url = str_replace("http://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
+    $url = str_replace("://twitter.com/", "://api.t.sina.com.cn/", $url);
+
+	if ($post_data === true)
+	{
+		$post_data = array();
+	}
+	if (user_type() == 'oauth' && ( strpos($url, 'sina.com.cn') !== false ))
+	{
+		user_oauth_sign($url, $post_data);
+        file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
+    }
+    elseif (strpos($url, 'twitter.com') !== false && is_array($post_data)) {
     // Passing $post_data as an array to twitter.com (non-oauth) causes an error :(
     $s = array();
     foreach ($post_data as $name => $value)
@@ -287,8 +297,6 @@ function twitter_process($url, $post_data = false) {
         $url = $url . "&";
     $url = $url . "source=" . OAUTH_CONSUMER_KEY;
   //}
-  $url = str_replace("http://twitter.com/", "http://api.t.sina.com.cn/", $url);
-
   $ch = curl_init($url);
 
   if($post_data !== false && !$_GET['page']) {
@@ -317,9 +325,9 @@ function twitter_process($url, $post_data = false) {
       return $response;
     case 401:
       user_logout();
-      theme('error', '<p>Error: Login credentials incorrect.</p>');
+      theme('error', "<p>Error: Login credentials incorrect.</p><p>$url</p><pre>".var_export(debug_backtrace(), true).'</pre>');
     case 0:
-      theme('error', '<h2>Twitter timed out</h3><p>Dabr gave up on waiting for Twitter to respond. They\'re probably overloaded right now, try again in a minute.</p>');
+      theme('error', '<h2>Twitter timed out</h3><p>Dabr gave up on waiting for Twitter to respond. They\'re probably overloaded right now, try again in a minute.</p>'."<p>$url</p><pre>".var_export(debug_backtrace(), true).'</pre>');
     default:
       $result = json_decode($response);
       $result = $result->error ? $result->error : $response;

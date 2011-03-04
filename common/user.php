@@ -8,99 +8,111 @@ menu_register(array(
 ));
 
 function user_oauth() {
-  require_once 'OAuth.php';
+	require_once 'OAuth.php';
 
-  // Session used to keep track of secret token during authorisation step
-  session_start();
-  
-  // Flag forces twitter_process() to use OAuth signing
-  $GLOBALS['user']['type'] = 'oauth';
-  
-  if ($oauth_token = $_GET['oauth_token']) {
-    // Generate ACCESS token request
-    $params = array('oauth_verifier' => $_GET['oauth_verifier']);
-    $response = twitter_process('https://twitter.com/oauth/access_token', $params);
-    parse_str($response, $token);
-    
-    // Store ACCESS tokens in COOKIE
-    $GLOBALS['user']['password'] = $token['oauth_token'] .'|'.$token['oauth_token_secret'];
-    
-    // Fetch the user's screen name with a quick API call
-    unset($_SESSION['oauth_request_token_secret']);
-    $user = twitter_process('http://twitter.com/account/verify_credentials.json');
-    $GLOBALS['user']['username'] = $user->screen_name;
-    
-    _user_save_cookie(1);
-    header('Location: '. BASE_URL);
-    exit();
-    
-  } else {
-    // Generate AUTH token request
-    $params = array('oauth_callback' => BASE_URL.'oauth');
-    $response = twitter_process('https://twitter.com/oauth/request_token', $params);
-    parse_str($response, $token);
-    
-    // Save secret token to session to validate the result that comes back from Twitter
-    $_SESSION['oauth_request_token_secret'] = $token['oauth_token_secret'];
-    
-    // redirect user to authorisation URL
-    $authorise_url = 'https://twitter.com/oauth/authorize?oauth_token='.$token['oauth_token'];
-    header("Location: $authorise_url");
-  }
+	// Session used to keep track of secret token during authorisation step
+	session_start();
+
+	// Flag forces twitter_process() to use OAuth signing
+	$GLOBALS['user']['type'] = 'oauth';
+
+	if ($oauth_token = $_GET['oauth_token']) {
+		// Generate ACCESS token request
+		$params = array('oauth_verifier' => $_GET['oauth_verifier']);
+		$oauth = new WeiboOAuth(OAUTH_CONSUMER_KEY,OAUTH_CONSUMER_SECRET);
+		file_put_contents("/tmp/dabrlog", json_encode($_GET)." before_access_token\n", FILE_APPEND);
+		$token = $oauth->getAccessToken($_GET['oauth_verifier'], $oauth_token);
+
+		#$response = twitter_process('https://api.twitter.com/oauth/access_token', $params);
+		#parse_str($response, $token);
+
+		// Store ACCESS tokens in COOKIE
+		$GLOBALS['user']['password'] = $token['oauth_token'] .'|'.$token['oauth_token_secret'];
+		
+		// Fetch the user's screen name with a quick API call
+		unset($_SESSION['oauth_request_token_secret']);
+		$weibo = new WeiboClient(OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET, $token['oauth_token'], $token['oauth_token_secret']);
+		$user = json_decode($weibo->verify_credentials());
+		# $user = twitter_process('http://api.t.sina.com.cn/account/verify_credentials.json');
+		$GLOBALS['user']['username'] = $user->screen_name;
+		file_put_contents("/tmp/dabrlog", json_encode($token)." access_token\n", FILE_APPEND);
+
+		_user_save_cookie(1);
+		#header('Location: '. BASE_URL);
+		exit();
+
+	} else {
+		// Generate AUTH token request
+		$params = array('oauth_callback' => BASE_URL.'oauth');
+		$oauth = new WeiboOAuth(OAUTH_CONSUMER_KEY,OAUTH_CONSUMER_SECRET);
+		$token = $oauth->getRequestToken(BASE_URL.'oauth');
+		if ($oauth->http_code != "200") {
+			echo "http_code".$oauth->http_code; exit;
+		}
+		# $response = twitter_process('https://api.twitter.com/oauth/request_token');
+		# parse_str($response, $token);
+
+		// Save secret token to session to validate the result that comes back from Twitter
+		$_SESSION['oauth_request_token_secret'] = $token['oauth_token_secret'];
+		file_put_contents("/tmp/dabrlog", json_encode($token)." request_token\n", FILE_APPEND);
+		// redirect user to authorisation URL
+		$authorise_url = 'http://api.t.sina.com.cn/oauth/authorize?oauth_token='.$token['oauth_token'];
+		header("Location: $authorise_url");
+	}
 }
 
 function user_oauth_sign(&$url, &$args = false) {
-  require_once 'OAuth.php';
-  
-  $method = $args !== false ? 'POST' : 'GET';
-  
-  // Move GET parameters out of $url and into $args
-  if (preg_match_all('#[?&]([^=]+)=([^&]+)#', $url, $matches, PREG_SET_ORDER)) {
-    foreach ($matches as $match) {
-      $args[$match[1]] = $match[2];
-    }
-    $url = substr($url, 0, strpos($url, '?'));
-  }
-  
-  $sig_method = new OAuthSignatureMethod_HMAC_SHA1();
-  $consumer = new OAuthConsumer(OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET);
-  $token = NULL;
+	require_once 'OAuth.php';
 
-  if (($oauth_token = $_GET['oauth_token']) && $_SESSION['oauth_request_token_secret']) {
-    $oauth_token_secret = $_SESSION['oauth_request_token_secret'];
-  } else {
-    list($oauth_token, $oauth_token_secret) = explode('|', $GLOBALS['user']['password']);
-  }
-  if ($oauth_token && $oauth_token_secret) {
-    $token = new OAuthConsumer($oauth_token, $oauth_token_secret);
-  }
-  
-  $request = OAuthRequest::from_consumer_and_token($consumer, $token, $method, $url, $args);
-  $request->sign_request($sig_method, $consumer, $token);
-  
-  switch ($method) {
-    case 'GET':
-      $url = $request->to_url();
-      $args = false;
-      return;
-    case 'POST':
-      $url = $request->get_normalized_http_url();
-      $args = $request->to_postdata();
-      return;
-  }
+	$method = $args !== false ? 'POST' : 'GET';
+
+	// Move GET parameters out of $url and into $args
+	if (preg_match_all('#[?&]([^=]+)=([^&]+)#', $url, $matches, PREG_SET_ORDER)) {
+		foreach ($matches as $match) {
+			$args[$match[1]] = $match[2];
+		}
+		$url = substr($url, 0, strpos($url, '?'));
+	}
+
+	$sig_method = new OAuthSignatureMethod_HMAC_SHA1();
+	$consumer = new OAuthConsumer(OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET);
+	$token = NULL;
+
+	if (($oauth_token = $_GET['oauth_token']) && $_SESSION['oauth_request_token_secret']) {
+		$oauth_token_secret = $_SESSION['oauth_request_token_secret'];
+	} else {
+		list($oauth_token, $oauth_token_secret) = explode('|', $GLOBALS['user']['password']);
+	}
+	if ($oauth_token && $oauth_token_secret) {
+		$token = new OAuthConsumer($oauth_token, $oauth_token_secret);
+	}
+
+	$request = OAuthRequest::from_consumer_and_token($consumer, $token, $method, $url, $args);
+	$request->sign_request($sig_method, $consumer, $token);
+
+	switch ($method) {
+		case 'GET':
+			$url = $request->to_url();
+			$args = false;
+			return;
+		case 'POST':
+			$url = $request->get_normalized_http_url();
+			$args = $request->to_postdata();
+			return;
+	}
 }
 
 function user_ensure_authenticated() {
-  if (!user_is_authenticated()) {
-    $content = theme('login');
-    $content .= file_get_contents('about.html');
-    theme('page', 'Login', $content);
-  }
+	if (!user_is_authenticated()) {
+		$content = theme('login');
+		$content .= file_get_contents('about.html');
+		theme('page', 'Login', $content);
+	}
 }
 
 function user_logout() {
-  unset($GLOBALS['user']);
-  setcookie('USER_AUTH', '', time() - 3600, '/');
+	unset($GLOBALS['user']);
+	setcookie('USER_AUTH', '', time() - 3600, '/');
 }
 
 function user_is_authenticated() {
@@ -178,10 +190,10 @@ function _user_decrypt_cookie($crypt_text) {
 
 function theme_login() {
   return '
-<!--p><strong><a href="oauth">Sign in with Sina/OAuth</a></strong><br />
+<p><strong><a href="oauth">Sign in with Sina/OAuth</a></strong><br />
 Note: Sina\'s OAuth page isn\'t very mobile friendly.</p>
   
-  <p>Or enter your Sina username and password below:</p-->
+  <p>Or enter your Sina username and password below:</p>
 <form method="post" action="'.$_GET['q'].'">
 <p>Username <input name="username" size="15" />
 <br />Password <input name="password" type="password" size="15" />
