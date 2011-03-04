@@ -1,5 +1,8 @@
 <?php
 
+// Weibo's API URL.
+define('API_URL','http://api.t.sina.com.cn/');
+
 // Cookie encryption key. Max 52 characters
 define('ENCRYPTION_KEY', 'Example Key Change Me!');
 
