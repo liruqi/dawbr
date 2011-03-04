@@ -281,7 +281,7 @@ function twitter_process($url, $post_data = false) {
 	if (user_type() == 'oauth' && ( strpos($url, 'sina.com.cn') !== false ))
 	{
 		user_oauth_sign($url, $post_data);
-        file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
+        #file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
     }
     elseif (strpos($url, 'twitter.com') !== false && is_array($post_data)) {
     // Passing $post_data as an array to twitter.com (non-oauth) causes an error :(
@@ -684,7 +684,7 @@ function twitter_friends_page($query) {
   $user = $query[1];
   if (!$user) {
     user_ensure_authenticated();
-    $user = user_current_username();
+    $user = $GLOBALS['user']['screen_name'];
   }
   $request = "http://twitter.com/statuses/friends/{$user}.json?page=".intval($_GET['page']);
   $tl = twitter_process($request);
@@ -696,7 +696,7 @@ function twitter_followers_page($query) {
   $user = $query[1];
   if (!$user) {
     user_ensure_authenticated();
-    $user = user_current_username();
+    $user = $GLOBALS['user']['screen_name'];
   }
   $request = "http://twitter.com/statuses/followers/{$user}.json?page=".intval($_GET['page']);
   $tl = twitter_process($request);
@@ -932,7 +932,7 @@ function twitter_favourites_page($query) {
   $screen_name = $query[1];
   if (!$screen_name) {
     user_ensure_authenticated();
-    $screen_name = user_current_username();
+    $screen_name = $GLOBALS['user']['screen_name'];
   }
   $request = "http://twitter.com/favorites/{$screen_name}.json?page=".intval($_GET['page']);
   $tl = twitter_process($request);

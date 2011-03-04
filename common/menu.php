@@ -66,7 +66,7 @@ function theme_menu_both($menu) {
     }
   }
   if (user_is_authenticated()) {
-    $user = user_current_username();
+    $user = $GLOBALS['user']['screen_name'];
     array_unshift($links, "<b><a href='user/$user'>$user</a></b>");
   }
   if ($menu == 'bottom') {

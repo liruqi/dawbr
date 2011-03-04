@@ -20,7 +20,7 @@ function user_oauth() {
 		// Generate ACCESS token request
 		$params = array('oauth_verifier' => $_GET['oauth_verifier']);
 		$oauth = new WeiboOAuth(OAUTH_CONSUMER_KEY,OAUTH_CONSUMER_SECRET);
-		file_put_contents("/tmp/dabrlog", json_encode($_GET)." before_access_token\n", FILE_APPEND);
+		#file_put_contents("/tmp/dabrlog", json_encode($_GET)." before_access_token\n", FILE_APPEND);
 		$token = $oauth->getAccessToken($_GET['oauth_verifier'], $oauth_token);
 
 		#$response = twitter_process('https://api.twitter.com/oauth/access_token', $params);
@@ -35,7 +35,7 @@ function user_oauth() {
 		$user = json_decode($weibo->verify_credentials());
 		# $user = twitter_process('http://api.t.sina.com.cn/account/verify_credentials.json');
 		$GLOBALS['user']['username'] = $user->screen_name;
-		file_put_contents("/tmp/dabrlog", json_encode($token)." access_token\n", FILE_APPEND);
+		#file_put_contents("/tmp/dabrlog", json_encode($token)." access_token\n", FILE_APPEND);
 
 		_user_save_cookie(1);
 		#header('Location: '. BASE_URL);
@@ -54,7 +54,7 @@ function user_oauth() {
 
 		// Save secret token to session to validate the result that comes back from Twitter
 		$_SESSION['oauth_request_token_secret'] = $token['oauth_token_secret'];
-		file_put_contents("/tmp/dabrlog", json_encode($token)." request_token\n", FILE_APPEND);
+		#file_put_contents("/tmp/dabrlog", json_encode($token)." request_token\n", FILE_APPEND);
 		// redirect user to authorisation URL
 		$authorise_url = 'http://api.t.sina.com.cn/oauth/authorize?oauth_token='.$token['oauth_token'];
 		header("Location: $authorise_url");
@@ -123,12 +123,17 @@ function user_is_authenticated() {
       $GLOBALS['user'] = array();
     }
   }
-  
   if (!$GLOBALS['user']['username']) {
     if ($_POST['username'] && $_POST['password']) {
+      #$bt = debug_backtrace();
+      #file_put_contents('/tmp/debug_backtrace', var_export($bt,true));
+
       $GLOBALS['user']['username'] = trim($_POST['username']);
       $GLOBALS['user']['password'] = $_POST['password'];
       $GLOBALS['user']['type'] = 'normal';
+      $user = twitter_process('http://api.t.sina.com.cn/account/verify_credentials.json');
+      $GLOBALS['user']['screen_name'] = $user->screen_name;
+      
       _user_save_cookie($_POST['stay-logged-in'] == 'yes');
       header('Location: '. BASE_URL);
       exit();
@@ -165,7 +170,7 @@ function _user_encryption_key() {
 }
 
 function _user_encrypt_cookie() {
-  $plain_text = $GLOBALS['user']['username'] . ':' . $GLOBALS['user']['password'] . ':' . $GLOBALS['user']['type'];
+  $plain_text = $GLOBALS['user']['username'] . ':' . $GLOBALS['user']['password'] . ':' . $GLOBALS['user']['type'] . ':' . $GLOBALS['user']['screen_name'];
   
   $td = mcrypt_module_open('blowfish', '', 'cfb', '');
   $iv = mcrypt_create_iv(mcrypt_enc_get_iv_size($td), MCRYPT_RAND);
@@ -185,7 +190,7 @@ function _user_decrypt_cookie($crypt_text) {
   $plain_text = mdecrypt_generic($td, $crypt_text);
   mcrypt_generic_deinit($td);
   
-  list($GLOBALS['user']['username'], $GLOBALS['user']['password'], $GLOBALS['user']['type']) = explode(':', $plain_text);
+  list($GLOBALS['user']['username'], $GLOBALS['user']['password'], $GLOBALS['user']['type'], $GLOBALS['user']['screen_name']) = explode(':', $plain_text);
 }
 
 function theme_login() {
