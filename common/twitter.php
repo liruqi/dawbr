@@ -221,22 +221,24 @@ function twitter_trends_page($query)
   theme('page', 'Trends', $content);
 }
 
-function js_counter($name)
+function js_counter($name, $length='140')
 {
 	$script = '<script type="text/javascript">
-	function updateCount() 
-	{
-		document.getElementById("remaining").innerHTML = 140 - document.getElementById("' . $name . '").value.length;
-		setTimeout(updateCount, 400);
-	}
-
-	function confirmShortTweet() 
-	{
-		var len = document.getElementById("' . $name . '").value.length;
-		if (len < 30) return confirm("That\'s a short tweet.\nContinue?");
-		return true;
-	}
-	updateCount();
+function updateCount() {
+var remaining = ' . $length . ' - document.getElementById("' . $name . '").value.length;
+document.getElementById("remaining").innerHTML = remaining;
+if(remaining < 0) {
+ var colour = "#FF0000";
+ var weight = "bold";
+} else {
+ var colour = "";
+ var weight = "";
+}
+document.getElementById("remaining").style.color = colour;
+document.getElementById("remaining").style.fontWeight = weight;
+setTimeout(updateCount, 400);
+}
+updateCount();
 </script>';
 	return $script;
 }
@@ -651,7 +653,7 @@ function twitter_block_page($query) {
   }
 }
 
-function twitter_spam_page($query) 
+function twitter_spam_page($query)
 {
 	//http://apiwiki.twitter.com/Twitter-REST-API-Method%3A-report_spam
 	//We need to post this data
@@ -661,7 +663,7 @@ function twitter_spam_page($query)
 	//The data we need to post
 	$post_data = array("screen_name" => $user);
 
-	$request = "http://twitter.com/report_spam.json";
+	$request = API_URL."report_spam.json";
 	twitter_process($request, $post_data);
 
 	//Where should we return the user to?  Back to the user
