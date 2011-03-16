@@ -2,7 +2,7 @@ This code was originally hacked by Tim Yang (http://timyang.net/), and once publ
 
 You may still download the orginal version here: http://60.28.113.74:8000/dabr.weibo.tgz
 
-You may try dabr-for-weibo here: http://liruqi.me/
+You may try dabr-for-weibo here: http://twittercn.sinaapp.com/
 
 Sample nginx configure:
 
@@ -24,6 +24,10 @@ Sample nginx configure:
 171         include fastcgi_params;
 172     }
 173 }
+
+For sina app engine:
+handle:
+  - rewrite: if(!is_dir() && !is_file() && path ~ "/(.*)") goto "/index.php?q=$1"
 
 TODO: 
 1. Fix bug
