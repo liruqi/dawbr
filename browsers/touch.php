@@ -53,14 +53,14 @@ function touch_theme_page($title, $content) {
 
 function touch_theme_menu_top() {
 	$links = array();
-	$main_menu_titles = array('home', 'replies', 'directs', 'search');
+	$main_menu_titles = array('home', 'mentions', 'cmts', 'replies', 'search');
 	foreach (menu_visible_items() as $url => $page) {
 		$title = $url ? $url : 'home';
 		$type = in_array($title, $main_menu_titles) ? 'main' : 'extras';
 		$links[$type][] = "<a href='$url'>$title</a>";
 	}
 	if (user_is_authenticated()) {
-		$user = user_current_username();
+		$user = $GLOBALS['user']['screen_name'];
 		array_unshift($links['extras'], "<b><a href='user/$user'>$user</a></b>");
 	}
 	array_push($links['main'], '<a href="#" onclick="return toggleMenu()">more</a>');
