@@ -318,11 +318,11 @@ function twitter_process($url, $post_data = false) {
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
   
-  #file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
-  #file_put_contents('/tmp/bt', var_export(debug_backtrace(), true)."\n", FILE_APPEND);
+  file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
+  file_put_contents('/tmp/bt', var_export(debug_backtrace(), true)."\n", FILE_APPEND);
   $response = curl_exec($ch);
   $response_info=curl_getinfo($ch);
-  #file_put_contents('/tmp/response', json_encode($response_info) . " => " . substr($response, 0, 140) ."\n", FILE_APPEND);
+  file_put_contents('/tmp/response', json_encode($response_info) . " => " . substr($response, 0, 140*16) ."\n", FILE_APPEND);
   curl_close($ch);
 
   switch( intval( $response_info['http_code'] ) ) {
@@ -1091,9 +1091,10 @@ function theme_user_header($user) {
   if ($user->protected == true) {
     $out .= '<br /><strong>Private/Protected Tweets</strong>';
   }
+  $link = $link ? "<br />Link: ".$link : "";
   $out .= "
 <br />Bio: {$user->description}
-<br />Link: {$link}
+{$link}
 <br />Location: {$user->location}
 <br />Joined: {$date_joined} (~$tweets_per_day tweets per day)
 </small>
@@ -1383,7 +1384,7 @@ function theme_followers($feed, $hide_pagination = false) {
     );
   }
   $content = theme('table', array(), $rows, array('class' => 'followers'));
-  file_put_contents('/tmp/urls', $feed->previous_cursor.":". $feed->next_cursor."\n", FILE_APPEND);
+  #file_put_contents('/tmp/urls', $feed->previous_cursor.":". $feed->next_cursor."\n", FILE_APPEND);
   if (!$hide_pagination)
     $content .= theme('cursor', $feed->previous_cursor, $feed->next_cursor);
   return $content;
@@ -1429,8 +1430,9 @@ function theme_search_form($query) {
 
 function theme_external_link($url, $content = null) {
 	//Long URL functionality.  Also uncomment function long_url($shortURL)
+    if (strlen($url) <= 8) return "";
 	if (!$content) 
-	{	
+	{
 		return "<a href='$url' target='_blank'>".long_url($url)."</a>";
 	}
 	else
