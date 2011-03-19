@@ -322,6 +322,7 @@ function twitter_process($url, $post_data = false) {
   #file_put_contents('/tmp/bt', var_export(debug_backtrace(), true)."\n", FILE_APPEND);
   $response = curl_exec($ch);
   $response_info=curl_getinfo($ch);
+  #file_put_contents('/tmp/response', json_encode($response_info) . " => " . substr($response, 0, 140) ."\n", FILE_APPEND);
   curl_close($ch);
 
   switch( intval( $response_info['http_code'] ) ) {
@@ -716,7 +717,8 @@ function twitter_friends_page($query) {
     user_ensure_authenticated();
     $user = $GLOBALS['user']['screen_name'];
   }
-  $request = "http://twitter.com/statuses/friends/{$user}.json?page=".intval($_GET['page']);
+  $cursor = isset($_GET['cursor']) ? ($_GET['cursor']) : -1;
+  $request = API_URL . "statuses/friends/{$user}.json?cursor=".$cursor;
   $tl = twitter_process($request);
   $content = theme('followers', $tl);
   theme('page', 'Friends', $content);
@@ -728,7 +730,8 @@ function twitter_followers_page($query) {
     user_ensure_authenticated();
     $user = $GLOBALS['user']['screen_name'];
   }
-  $request = "http://twitter.com/statuses/followers/{$user}.json?page=".intval($_GET['page']);
+  $cursor = isset($_GET['cursor']) ? ($_GET['cursor']) : -1;
+  $request = API_URL . "statuses/followers/{$user}.json?cursor=".$cursor;
   $tl = twitter_process($request);
   $content = theme('followers', $tl);
   theme('page', 'Followers', $content);
@@ -1359,7 +1362,7 @@ function twitter_is_reply($status) {
 function theme_followers($feed, $hide_pagination = false) {
   $rows = array();
   if (count($feed) == 0 || $feed == '[]') return '<p>No users to display.</p>';
-  foreach ($feed as $user) {
+  foreach ($feed->users as $user) {
     $test = "";
     /*
     foreach ($user as $usera) {
@@ -1376,12 +1379,13 @@ function theme_followers($feed, $hide_pagination = false) {
       theme('avatar', $user->profile_image_url),
       "{$name} - {$user->location}<br />" .
       "<small>{$user->description}<br />" .
-      "Info: {$test} {$user->statuses_count} tweets, {$user->friends_count} friends, {$user->followers_count} followers, ~{$tweets_per_day} tweets per day</small>"
+      "Info: {$user->statuses_count} tweets, {$user->friends_count} friends, {$user->followers_count} followers, ~{$tweets_per_day} tweets per day</small>"
     );
   }
   $content = theme('table', array(), $rows, array('class' => 'followers'));
+  file_put_contents('/tmp/urls', $feed->previous_cursor.":". $feed->next_cursor."\n", FILE_APPEND);
   if (!$hide_pagination)
-    $content .= theme('pagination');
+    $content .= theme('cursor', $feed->previous_cursor, $feed->next_cursor);
   return $content;
 }
 
@@ -1447,6 +1451,15 @@ function theme_pagination() {
   return '<p>'.implode(' | ', $links).'</p>';
 }
 
+function theme_cursor($prev, $next) {
+  if (preg_match('#&q(.*)#', $_SERVER['QUERY_STRING'], $matches)) {
+    $query = $matches[0];
+  }
+  if ($prev and ($prev == $_GET["cursor"])) $prev -= 20;
+  if ($prev) $links[] = "<a href='{$_GET['q']}?cursor=".($prev)."$query' accesskey='9'>Prev</a> 9";
+  if ($next) $links[] = "<a href='{$_GET['q']}?cursor=".($next)."$query' accesskey='8'>Next</a> 8";
+  return '<p>'.implode(' | ', $links).'</p>';
+}
 
 function theme_action_icons($status) {
   $from = $status->from->screen_name;
