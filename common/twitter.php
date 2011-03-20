@@ -1030,27 +1030,28 @@ function twitter_hashtag_page($query) {
 }
 
 function theme_status_form($text = '', $in_reply_to_id = NULL) {
-  if (user_is_authenticated()) {
-	  $request = 'http://twitter.com/statuses/user_timeline.json?user_id=10503&count=2&page='.intval($_GET['page']);
-	  $tl = twitter_process($request);
-
-    return "<form method='post' action='update'><input name='status' value='{$text}' maxlength='140' /> <input name='in_reply_to_id' value='{$in_reply_to_id}' type='hidden' /><input type='submit' value='Update' /></form>";
-  }
+	if (user_is_authenticated()) {
+		return "<form method='post' action='update'><input name='status' value='{$text}' maxlength='140' /> <input name='in_reply_to_id' value='{$in_reply_to_id}' type='hidden' /><input type='submit' value='Update' /></form>";
+	}
 }
 
 function theme_status($status) {
-  $time_since = theme('status_time_link', $status);
-  $parsed = twitter_parse_tags($status->text);
-  $avatar = theme('avatar', $status->user->profile_image_url, 1);
 
-  $out = theme('status_form', "@{$status->user->screen_name} ");
-  $out .= "<p>$parsed</p>
-<table align='center'><tr><td>$avatar</td><td><a href='user/{$status->user->screen_name}'>{$status->user->screen_name}</a>
-<br />$time_since</td></tr></table>";
-  if (user_is_current_user($status->user->screen_name)) {
-    $out .= "<form action='delete/{$status->id}' method='post'><input type='submit' value='Delete without confirmation' /></form>";
-  }
-  return $out;
+	$time_since = theme('status_time_link', $status);
+	$parsed = twitter_parse_tags($status->text);
+	$avatar = theme('avatar', $status->user->profile_image_url);
+
+	$out = theme('status_form', "@{$status->user->screen_name} ");
+	$out .= "<div class='timeline'>\n";
+	$out .= " <div class='tweet odd'>\n";
+	$out .= "  <span class='avatar'>$avatar</span>\n";
+	$out .= "  <span class='status shift'><b><a href='user/{$status->user->screen_name}'>{$status->user->screen_name}</a></b> $time_since<br />$parsed</span>\n";
+	$out .= " </div>\n";
+	$out .= "</div>\n";
+	if (user_is_current_user($status->user->screen_name)) {
+		$out .= "<form action='delete/{$status->id}' method='post'><input type='submit' value='Delete without confirmation' /></form>";
+	}
+	return $out;
 }
 
 function theme_retweet($status) {
@@ -1080,9 +1081,9 @@ function theme_comment($status) {
 }
 
 function twitter_tweets_per_day($user, $rounding = 1) {
-  // Helper function to calculate an average count of tweets per day
-  $days_on_twitter = (time() - strtotime($user->created_at)) / 86400;
-  return round($user->statuses_count / $days_on_twitter, $rounding);
+	// Helper function to calculate an average count of tweets per day
+	$days_on_twitter = (time() - strtotime($user->created_at)) / 86400;
+	return round($user->statuses_count / $days_on_twitter, $rounding);
 }
 
 function theme_user_header($user) {
@@ -1145,9 +1146,9 @@ function theme_status_time_link($status, $is_link = true) {
   } else {
     $out = $status->created_at;
   }
-  if ($is_link)
-    $out = "<a href='status/{$status->id}'>$out</a>";
-  return "<small>$out</small>";
+	if ($is_link)
+		$out = "<a href='status/{$status->id}' class='time'>$out</a>";
+	return $out;
 }
 
 function twitter_date($format, $timestamp = null) {
