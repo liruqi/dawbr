@@ -159,7 +159,7 @@ function theme_page($title, $content) {
 		echo '</div>';
 	}
 	echo 			$body;
-	echo admob_request($admob_params);
+    if (function_exists('admob_request')) echo admob_request($admob_params);
 	echo		'</body>
 		</html>';
 	exit();

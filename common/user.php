@@ -20,8 +20,9 @@ function user_oauth() {
 		// Generate ACCESS token request
 		$params = array('oauth_verifier' => $_GET['oauth_verifier']);
 		$oauth = new WeiboOAuth(OAUTH_CONSUMER_KEY,OAUTH_CONSUMER_SECRET);
-		#file_put_contents("/tmp/dabrlog", json_encode($_GET)." before_access_token\n", FILE_APPEND);
+		file_put_contents("/tmp/dabrlog", json_encode($_GET)." before_access_token\n", FILE_APPEND);
 		$token = $oauth->getAccessToken($_GET['oauth_verifier'], $oauth_token);
+		file_put_contents("/tmp/dabrlog", json_encode($token)." access_token\n", FILE_APPEND);
 
 		#$response = twitter_process('https://api.twitter.com/oauth/access_token', $params);
 		#parse_str($response, $token);
@@ -32,11 +33,11 @@ function user_oauth() {
 		// Fetch the user's screen name with a quick API call
 		unset($_SESSION['oauth_request_token_secret']);
 		$weibo = new WeiboClient(OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET, $token['oauth_token'], $token['oauth_token_secret']);
-		$user = json_decode($weibo->verify_credentials());
+		$user = $weibo->verify_credentials();
 		# $user = twitter_process('http://api.t.sina.com.cn/account/verify_credentials.json');
-		$GLOBALS['user']['username'] = $user->screen_name;
-		#file_put_contents("/tmp/dabrlog", json_encode($token)." access_token\n", FILE_APPEND);
+		$GLOBALS['user']['username'] = $user["screen_name"];
 
+		file_put_contents("/tmp/dabrlog", json_encode($user)." verify_credentials\n", FILE_APPEND);
 		_user_save_cookie(1);
 		#header('Location: '. BASE_URL);
 		exit();
@@ -54,7 +55,7 @@ function user_oauth() {
 
 		// Save secret token to session to validate the result that comes back from Twitter
 		$_SESSION['oauth_request_token_secret'] = $token['oauth_token_secret'];
-		#file_put_contents("/tmp/dabrlog", json_encode($token)." request_token\n", FILE_APPEND);
+		file_put_contents("/tmp/dabrlog", json_encode($token)." request_token\n", FILE_APPEND);
 		// redirect user to authorisation URL
 		$authorise_url = 'http://api.t.sina.com.cn/oauth/authorize?oauth_token='.$token['oauth_token'];
 		header("Location: $authorise_url");
@@ -205,6 +206,14 @@ Note: Sina\'s OAuth page isn\'t very mobile friendly.</p>
 <br /><label><input type="checkbox" value="yes" name="stay-logged-in" /> Stay logged in? </label>
 <br /><input type="submit" value="Sign In" /></p>
 </form>
+
+<p><b>Registration steps:</b></p>
+
+<ol>
+	<li><a href="oauth">Sign in via Twitter.com</a> from any computer</li>
+	<li>Visit the Dabr settings page to choose a password</li>
+	<li>Done! You can now benefit from accessing Twitter through Dabr from anywhere (even from computers that block Twitter.com)</li>
+</ol>
 ';
 }
 
