@@ -20,9 +20,9 @@ function user_oauth() {
 		// Generate ACCESS token request
 		$params = array('oauth_verifier' => $_GET['oauth_verifier']);
 		$oauth = new WeiboOAuth(OAUTH_CONSUMER_KEY,OAUTH_CONSUMER_SECRET);
-		file_put_contents("/tmp/dabrlog", json_encode($_GET)." before_access_token\n", FILE_APPEND);
+		#file_put_contents("/tmp/dabrlog", json_encode($_GET)." before_access_token\n", FILE_APPEND);
 		$token = $oauth->getAccessToken($_GET['oauth_verifier'], $oauth_token);
-		file_put_contents("/tmp/dabrlog", json_encode($token)." access_token\n", FILE_APPEND);
+		#file_put_contents("/tmp/dabrlog", json_encode($token)." access_token\n", FILE_APPEND);
 
 		#$response = twitter_process('https://api.twitter.com/oauth/access_token', $params);
 		#parse_str($response, $token);
@@ -37,7 +37,7 @@ function user_oauth() {
 		# $user = twitter_process('http://api.t.sina.com.cn/account/verify_credentials.json');
 		$GLOBALS['user']['username'] = $user["screen_name"];
 
-		file_put_contents("/tmp/dabrlog", json_encode($user)." verify_credentials\n", FILE_APPEND);
+		#file_put_contents("/tmp/dabrlog", json_encode($user)." verify_credentials\n", FILE_APPEND);
 		_user_save_cookie(1);
 		#header('Location: '. BASE_URL);
 		exit();
@@ -55,7 +55,7 @@ function user_oauth() {
 
 		// Save secret token to session to validate the result that comes back from Twitter
 		$_SESSION['oauth_request_token_secret'] = $token['oauth_token_secret'];
-		file_put_contents("/tmp/dabrlog", json_encode($token)." request_token\n", FILE_APPEND);
+		#file_put_contents("/tmp/dabrlog", json_encode($token)." request_token\n", FILE_APPEND);
 		// redirect user to authorisation URL
 		$authorise_url = 'http://api.t.sina.com.cn/oauth/authorize?oauth_token='.$token['oauth_token'];
 		header("Location: $authorise_url");

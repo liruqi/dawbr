@@ -318,11 +318,11 @@ function twitter_process($url, $post_data = false) {
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
   
-  file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
-  file_put_contents('/tmp/bt', var_export(debug_backtrace(), true)."\n", FILE_APPEND);
+  #file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
+  #file_put_contents('/tmp/bt', var_export(debug_backtrace(), true)."\n", FILE_APPEND);
   $response = curl_exec($ch);
   $response_info=curl_getinfo($ch);
-  file_put_contents('/tmp/response', json_encode($response_info) . " => " . substr($response, 0, 140*16) ."\n", FILE_APPEND);
+  #file_put_contents('/tmp/response', json_encode($response_info) . " => " . substr($response, 0, 140*16) ."\n", FILE_APPEND);
   curl_close($ch);
 
   switch( intval( $response_info['http_code'] ) ) {
