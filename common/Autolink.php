@@ -60,7 +60,7 @@ class Twitter_Autolink {
 	public function autoLinkHashtags($tweet) {
 		// TODO Match latin chars with accents
 		return preg_replace('$(^|[^0-9A-Z&/]+)([#＃]+)([0-9A-Z_]*[A-Z_]+[a-z0-9_üÀ-ÖØ-öø-ÿ]*)$iu',
-			'${1}<a href="' . $this->get_base() . 'hash/' . '${3}" title="#${3}" class="' . $this->urlClass . ' ' . $this->hashtagClass . '">${2}${3}</a>',
+			'${1}<a href="' . $this->get_base() . 'hash/' . '${3}" title="#${3}" class="' . $this->urlClass . ' ' . '">${2}${3}</a>',
 							$tweet);
 	}
 
@@ -105,7 +105,7 @@ class Twitter_Autolink {
 	}
 
 	public function autoLinkUsernamesAndLists($tweet) {
-		return preg_replace_callback('$([^a-z0-9_]|^)([@|＠])([a-z0-9_]{1,20})(/[a-z][a-z0-9\x80-\xFF-]{0,79})?$iu',
+		return preg_replace_callback('$([^a-z0-9_]|^)([@|＠])([\x{4e00}-\x{9fa5}\x{ff00}-\x{ffff}\x{0800}-\x{4e00}\x{3130}-\x{318f}\x{ac00}-\x{d7a3}a-zA-Z0-9_]{1,20})(/[a-z][a-z0-9\x80-\xFF-]{0,79})?$iu',
 									 array($this, 'replacementUsernameAndLists'),
 									 $tweet);
 	}
