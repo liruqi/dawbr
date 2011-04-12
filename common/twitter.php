@@ -1160,13 +1160,34 @@ function twitter_date($format, $timestamp = null) {
 
 function twitter_standard_timeline($feed, $source) {
 	$output = array();
+	#file_put_contents("/tmp/twitter_standard_timeline.dump", var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true). " <==== $source\n", FILE_APPEND);
 	if (!is_array($feed) && $source != 'thread') return $output;
 	switch ($source) {
-		case 'user':
-		case 'favourites':
 		case 'friends':
+			#file_put_contents("/tmp/timeline.dump", var_export($feed, true));
+			$retweeted_status_to_index = array();
+			foreach ($feed as $idx => $status) if ($status->retweeted_status) {
+				$retweeted_status_id = $status->retweeted_status->id;
+				if (empty($retweeted_status_to_index[$retweeted_status_id])) {
+					$retweeted_status_to_index[$retweeted_status_id]=array();
+				}
+				$retweeted_status_to_index[$retweeted_status_id][] = $idx;
+			}
+			#file_put_contents("/tmp/retweeted_status_to_index.dump",var_export($retweeted_status_to_index, true));
+			foreach ($retweeted_status_to_index as $retweeted_status_id => $list) {
+				if (count($list) > 1) {
+					$retweet_users = array();
+					for($idx = 1; $idx<count($list); $idx+=1) {
+						$retweet_users[] = "@".$feed[$list[$idx]]->user->screen_name;
+						unset($feed[$list[$idx]]);
+					}
+					$feed[$list[0]]->text .= (" || Also retweeted by " . implode(", " , array_unique($retweet_users)). " ||");
+				}
+			}
+		case 'favourites':
 		case 'public':
 		case 'mentions':
+		case 'user':
 			foreach ($feed as $status) {
 				$new = $status;
 				$new->from = $new->user;
