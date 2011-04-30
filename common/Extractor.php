@@ -66,13 +66,14 @@ class Twitter_Extractor {
      * @return Array of usernames referenced (without the leading @ sign)
      */
     public function extractMentionedScreennames($tweet) {
-        preg_match_all('/(^|[^a-zA-Z0-9_])[@＠]([a-zA-Z0-9_]{1,20})(?=(.|$))/', $tweet, $matches);
+        preg_match_all('/(^|[^a-zA-Z0-9_])@([\x{4e00}-\x{9fa5}\x{ff00}-\x{ffff}\x{0800}-\x{4e00}\x{3130}-\x{318f}\x{ac00}-\x{d7a3}a-zA-Z0-9_]{1,20})(?=(.|$))/u', $tweet, $matches);
         $usernames = array();
         for ($i = 0; $i < sizeof($matches[2]); $i += 1) {
-          if (! preg_match('/^[@＠]/', $matches[3][$i])) {
+          if (! preg_match('/^[@]/', $matches[3][$i])) {
             array_push($usernames, $matches[2][$i]);
           }  
         }
+		file_put_contents('/tmp/at.dump', json_encode($matches)." ".json_encode($usernames)."\n", FILE_APPEND);
         return $usernames;
     }
 
@@ -95,7 +96,8 @@ class Twitter_Extractor {
                                                                   # 0x205F White_Space # Zs       MEDIUM MATHEMATICAL SPACE
         $whitespace .= "\xe3\x80\x80";                            #0x3000 White_Space # Zs       IDEOGRAPHIC SPACE
 
-        preg_match('/^(' . $whitespace . ')*[@＠]([a-zA-Z0-9_]{1,20})/', $tweet, $matches);
+        preg_match('/^(' . $whitespace . ')*[@]([\x{4e00}-\x{9fa5}\x{ff00}-\x{ffff}\x{0800}-\x{4e00}\x{3130}-\x{318f}\x{ac00}-\x{d7a3}a-zA-Z0-9_]{1,20})/u', $tweet, $matches);
+		file_put_contents('/tmp/at.dump', json_encode($matches)."\n", FILE_APPEND);
         return isset($matches[2]) ? $matches[2] : '';
     }
 }

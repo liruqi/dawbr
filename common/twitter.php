@@ -332,9 +332,9 @@ function twitter_process($url, $post_data = false) {
 			return $response;
 		case 401:
 			user_logout();
-			theme('error', "<p>Error: Login credentials incorrect.</p><p>$url</p><pre>".var_export(debug_backtrace(), true).'</pre>');
+			theme('error', "<p>Error: Login credentials incorrect.</p><p>$url</p><pre>".var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true).'</pre>');
 		case 0:
-			theme('error', '<h2>Twitter timed out</h3><p>Dabr gave up on waiting for Twitter to respond. They\'re probably overloaded right now, try again in a minute.</p>'."<p>$url</p><pre>".var_export(debug_backtrace(), true).'</pre>');
+			theme('error', '<h2>Twitter timed out</h3><p>Dabr gave up on waiting for Twitter to respond. They\'re probably overloaded right now, try again in a minute.</p>'."<p>$url</p><pre>".var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true).'</pre>');
 		default:
 			$result = json_decode($response);
 			$result = $result->error ? $result->error : $response;
@@ -392,15 +392,7 @@ class Dabr_Autolink extends Twitter_Autolink {
 
 function twitter_parse_tags($input)
 {
-
-	$urls = Twitter_Extractor::extractURLS($input);
-
 	$out = $input;
-
-	foreach ($urls as $value)
-	{
-		$out = str_replace ($value, long_url($value) , $out) ;
-	}
 
 	$autolink = new Dabr_Autolink();
 	$out = $autolink->autolink($out);
@@ -1364,6 +1356,7 @@ function theme_timeline($feed)
 			$link = theme('status_time_link', $status, !$status->is_direct);
 			$actions = theme('action_icons', $status);
 
+			$reason = twitter_parse_tags($status->text);
 			$text = twitter_parse_tags($status->retweeted_status->text);
 			if ($status->retweeted_status->thumbnail_pic)
 				$text .= "<br/> <a href='{$status->retweeted_status->original_pic}' target=_blank><img src='{$status->retweeted_status->thumbnail_pic}' /></a> <br />";
@@ -1371,7 +1364,7 @@ function theme_timeline($feed)
 			$source = $status->source ? " from {$status->source}" : '';
 			$source2 = $status->retweeted_status->source ? " from {$status->retweeted_status->source}" : '';
 			$row = array(
-				"<b><a href='user/{$status->from->screen_name}'>{$status->from->screen_name}</a></b> $actions $link <br /> $status->text <small>$source</small> <br/>原文<br/> <b> <a href='user/{$status->retweeted_status->user->screen_name}'>{$status->retweeted_status->user->screen_name}</a></b> <br />{$text} <small>$source2</small>",
+				"<b><a href='user/{$status->from->screen_name}'>{$status->from->screen_name}</a></b> $actions $link <br /> $reason <small>$source</small> <br/>原文<br/> <b> <a href='user/{$status->retweeted_status->user->screen_name}'>{$status->retweeted_status->user->screen_name}</a></b> <br />{$text} <small>$source2</small>",
 			);
 		}
 		else{
