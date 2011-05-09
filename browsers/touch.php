@@ -3,12 +3,15 @@
 require 'desktop.php';
 
 function touch_theme_action_icon($url, $image_url, $text) {
-	$image_url = str_replace('.png', 'L.png', $image_url);
-	$image_url = str_replace('.gif', 'L.png', $image_url);
 	if ($text == 'MAP')	{
-		return "<a href='$url' target='_blank'><img src='$image_url' /></a>";
+		return "<a href='$url' alt='$text' target='_blank'><img src='$image_url' width='12' height='12' /></a>";
 	}
-	return "<a href='$url'><img src='$image_url' width='12' height='12' /></a>";
+	else if ($text == 'DM')	{
+		return "<a href='$url'><img src='$image_url' alt='$text' width='16' height='11' /></a>";
+	}
+	else	{
+		return "<a href='$url'><img src='$image_url' alt='$text' width='12' height='12' /></a>";
+	}
 }
 
 
