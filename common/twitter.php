@@ -322,7 +322,7 @@ function twitter_process($url, $post_data = false) {
 	#file_put_contents('/tmp/bt', var_export(debug_backtrace(), true)."\n", FILE_APPEND);
 	$response = curl_exec($ch);
 	$response_info=curl_getinfo($ch);
-	#file_put_contents('/tmp/response', json_encode($response_info) . " => " . substr($response, 0, 140*16) ."\n", FILE_APPEND);
+	#file_put_contents('/tmp/response', json_encode($response_info) . " => " . var_export(json_decode($response), true) ."\n", FILE_APPEND);
 	curl_close($ch);
 
 	switch( intval( $response_info['http_code'] ) ) {
@@ -1509,8 +1509,11 @@ function theme_cursor($prev, $next) {
 
 function theme_action_icons($status) {
 	$from = $status->from->screen_name;
+	$retweeted_by = $status->retweeted_by->user->screen_name;
+	$retweeted_id = $status->retweeted_by->id;
+	$geo = $status->geo;
 	$actions = array();
-	
+
 	if (!$status->is_direct) {
 		$actions[] = theme('action_icon', "user/{$from}/reply/{$status->id}", 'images/reply.png', '@');
 	}
@@ -1537,6 +1540,15 @@ function theme_action_icons($status) {
 	} else {
 		$actions[] = theme('action_icon', "directs/delete/{$status->id}", 'images/trash.gif', 'DEL');
 	}
+	if ($geo !== null)
+	{
+		$latlong = $geo->coordinates;
+		$lat = $latlong[0];
+		$long = $latlong[1];
+		$actions[] = theme('action_icon', "http://maps.google.com.hk/m?q={$lat},{$long}", 'images/map.png', 'MAP');
+	}
+	//Search for @ to a user
+	$actions[] = theme('action_icon',"search?query=%40{$from}",'images/q.png','?');
 
 	return implode(' ', $actions);
 }
