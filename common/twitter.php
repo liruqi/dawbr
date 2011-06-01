@@ -276,7 +276,7 @@ function twitter_process($url, $post_data = false) {
 	$url = str_replace("http://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
 	$url = str_replace("://twitter.com/", "://api.t.sina.com.cn/", $url);
 	file_put_contents('/tmp/session', var_export($_SESSION, true)."\n", FILE_APPEND);
-    $c = new WeiboClient( WB_AKEY , WB_SKEY , $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
+    $c = new WeiboClient(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET , $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
     $c->oauth->decode_json = false;
     if($post_data === false) {
         $response = $c->oauth->get($url);

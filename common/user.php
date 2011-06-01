@@ -8,8 +8,6 @@ menu_register(array(
 ));
 
 function user_oauth() {
-	require_once 'OAuth.php';
-
 	// Session used to keep track of secret token during authorisation step
 	session_start();
 
@@ -18,7 +16,7 @@ function user_oauth() {
 
 	if ($oauth_verifier=$_GET['oauth_verifier']) {
 		// Generate ACCESS token request
-        $o = new WeiboOAuth( WB_AKEY , WB_SKEY , $_SESSION['keys']['oauth_token'] , $_SESSION['keys']['oauth_token_secret']);
+        $o = new WeiboOAuth(OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET, $_SESSION['keys']['oauth_token'] , $_SESSION['keys']['oauth_token_secret']);
 		$token = $o->getAccessToken($_GET['oauth_verifier'], $oauth_token);
 
 		// Store ACCESS tokens in COOKIE
@@ -27,8 +25,9 @@ function user_oauth() {
 		
 		// Fetch the user's screen name with a quick API call
 		$user = twitter_process('http://api.t.sina.com.cn/account/verify_credentials.json');
-		$GLOBALS['user']['username'] = $user["screen_name"];
-
+        $GLOBALS['user']['username'] = $user->screen_name;
+        _user_save_cookie(1);
+        
 		header('Location: '. BASE_URL);
 
 	} else {
