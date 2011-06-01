@@ -244,9 +244,6 @@ updateCount();
 }
 
 function twitter_upload_page($query) {
-	if (user_type() == 'oauth') {
-		return theme('page', 'Error', '<p>You can\'t use Twitpic uploads while accessing Dabr using an OAuth login.</p>');
-	}
 	if ($_POST['message']) {
 		$response = twitter_process('http://api.t.sina.com.cn/statuses/upload.xml', array(
 			'pic' => '@'.$_FILES['media']['tmp_name'],
@@ -275,57 +272,22 @@ function endsWith( $str, $sub ) {
 }
 
 function twitter_process($url, $post_data = false) {
-		$url = str_replace("https://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
-		$url = str_replace("http://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
-		$url = str_replace("://twitter.com/", "://api.t.sina.com.cn/", $url);
-
-	if ($post_data === true)
-	{
-		$post_data = array();
-	}
-	if (user_type() == 'oauth' && ( strpos($url, 'sina.com.cn') !== false ))
-	{
-		user_oauth_sign($url, $post_data);
-		}
-		elseif (strpos($url, 'api.t.sina.com.cn') !== false && is_array($post_data)) {
-		// Passing $post_data as an array to twitter.com (non-oauth) causes an error :(
-		$s = array();
-		foreach ($post_data as $name => $value)
-			$s[] = $name.'='.urlencode($value);
-		$post_data = implode('&', $s);
-	}
-	#if (! isset($post_data['source'])) {
-		if (endsWith($url, ".json") || endsWith($url, ".xml"))
-				$url = $url . "?";
-		else
-				$url = $url . "&";
-		$url = $url . "source=" . OAUTH_CONSUMER_KEY;
-	#}
-	$ch = curl_init($url);
-
-	if($post_data !== false && !$_GET['page']) {
-		curl_setopt ($ch, CURLOPT_POST, true);
-		curl_setopt ($ch, CURLOPT_POSTFIELDS, $post_data);
-	}
-
-	if (user_type() != 'oauth' && user_is_authenticated())
-		curl_setopt($ch, CURLOPT_USERPWD, user_current_username().':'.$GLOBALS['user']['password']);
-
-	curl_setopt($ch, CURLOPT_VERBOSE, 0);
-	curl_setopt($ch, CURLOPT_HEADER, 0);
-	curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-	curl_setopt($ch, CURLOPT_USERAGENT, 'dabr');
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+	$url = str_replace("https://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
+	$url = str_replace("http://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
+	$url = str_replace("://twitter.com/", "://api.t.sina.com.cn/", $url);
+	file_put_contents('/tmp/session', var_export($_SESSION, true)."\n", FILE_APPEND);
+    $c = new WeiboClient( WB_AKEY , WB_SKEY , $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
+    $c->oauth->decode_json = false;
+    if($post_data === false) {
+        $response = $c->oauth->get($url);
+    } else {
+        $response = $c->oauth->post($url, $post_data);
+    }
+	file_put_contents('/tmp/session', var_export($c->oauth->http_info, true)."\n", FILE_APPEND);
 	
 	#file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
-	#file_put_contents('/tmp/bt', var_export(debug_backtrace(), true)."\n", FILE_APPEND);
-	$response = curl_exec($ch);
-	$response_info=curl_getinfo($ch);
-	#file_put_contents('/tmp/response', json_encode($response_info) . " => " . var_export(json_decode($response), true) ."\n", FILE_APPEND);
-	curl_close($ch);
 
-	switch( intval( $response_info['http_code'] ) ) {
+	switch( intval( $c->oauth->http_info['http_code'] ) ) {
 		case 200:
 			$json = json_decode($response);
 			if ($json) return $json;
@@ -339,7 +301,7 @@ function twitter_process($url, $post_data = false) {
 			$result = json_decode($response);
 			$result = $result->error ? $result->error : $response;
 			if (strlen($result) > 500) $result = 'Something broke on Twitter\'s end.';
-			theme('error', "<h2>An error occured while calling the Twitter API</h2><p>{$response_info['http_code']}: {$result}</p><hr><p>$url</p>");
+			theme('error', "<h2>An error occured while calling the Twitter API</h2><p>{$c->oauth->http_info['http_code']}: {$result}</p><hr><p>$url</p>");
 	}
 }
 
@@ -1557,10 +1519,10 @@ function theme_action_icon($url, $image_url, $text) {
 	// alt attribute left off to reduce bandwidth by about 720 bytes per page
 	if ($text == 'MAP')
 	{
-		return "<a href='$url' target='_blank'><img src='$image_url' /></a>";
+		return "<a href='$url' alt='$text' target='_blank'><img src='$image_url' /></a>";
 	}
 
-	return "<a href='$url'><img src='$image_url' /></a>";
+	return "<a href='$url'><img src='$image_url' alt='$text' /></a>";
 }
 
 function pluralise($word, $count, $show = FALSE) {
