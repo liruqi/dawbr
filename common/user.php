@@ -186,14 +186,6 @@ function theme_login() {
 <p><strong><a href="oauth">Sign in with Sina/OAuth</a></strong><br />
 Note: Sina\'s OAuth page isn\'t very mobile friendly.</p>
   
-  <p>Or enter your Sina username and password below:</p>
-<form method="post" action="'.$_GET['q'].'">
-<p>Username <input name="username" size="15" />
-<br />Password <input name="password" type="password" size="15" />
-<br /><label><input type="checkbox" value="yes" name="stay-logged-in" /> Stay logged in? </label>
-<br /><input type="submit" value="Sign In" /></p>
-</form>
-
 <p><b>Registration steps:</b></p>
 
 <ol>
