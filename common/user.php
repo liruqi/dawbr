@@ -8,86 +8,32 @@ menu_register(array(
 ));
 
 function user_oauth() {
-	// Session used to keep track of secret token during authorisation step
-	session_start();
+    if (!isset($_GET['oauth_verifier'])) {
+        var_dump(debug_backtrace());
+        $_SESSION = NULL;
+        exit;
+    }
 
 	// Flag forces twitter_process() to use OAuth signing
 	$GLOBALS['user']['type'] = 'oauth';
 
-	if ($oauth_verifier=$_GET['oauth_verifier']) {
-		// Generate ACCESS token request
-        $o = new WeiboOAuth(OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET, $_SESSION['keys']['oauth_token'] , $_SESSION['keys']['oauth_token_secret']);
-		$token = $o->getAccessToken($_GET['oauth_verifier'], $oauth_token);
+    $o = new WeiboOAuth(OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET, $_SESSION['keys']['oauth_token'] , $_SESSION['keys']['oauth_token_secret']);
+    // Generate ACCESS token request
+    $last_key = $o->getAccessToken($_REQUEST['oauth_verifier']);
 
-		// Store ACCESS tokens in COOKIE
-		$GLOBALS['user']['password'] = $token['oauth_token'] .'|'.$token['oauth_token_secret'];
-		$_SESSION['last_key'] = $token;
-		
-		// Fetch the user's screen name with a quick API call
-		$user = twitter_process('http://api.t.sina.com.cn/account/verify_credentials.json');
-        $GLOBALS['user']['username'] = $user->screen_name;
-        _user_save_cookie(1);
-        
-		header('Location: '. BASE_URL);
+    // file_put_contents("/tmp/dabrlog", "getAccessToken: " . json_encode($last_key)."var {$_REQUEST['oauth_verifier']} \n", FILE_APPEND);
+    // Store ACCESS tokens in COOKIE
 
-	} else {
-		// Generate AUTH token request
-		$oauth = new WeiboOAuth(OAUTH_CONSUMER_KEY,OAUTH_CONSUMER_SECRET);
-		$token = $oauth->getRequestToken();
-		if ($oauth->http_code != "200") {
-			echo "http_code".$oauth->http_code; exit;
-		}
+    $_SESSION['last_key'] = $last_key;
 
-		// Save secret token to session to validate the result that comes back from Twitter
-		$_SESSION['keys'] = $token;
+    $c = new WeiboClient(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET, $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
+    $user = $c->verify_credentials();
+    // Fetch the user's screen name with a quick API call
 
-		#file_put_contents("/tmp/dabrlog", json_encode($token)." request_token\n", FILE_APPEND);
-		// redirect user to authorisation URL
-		$authorise_url = 'http://api.t.sina.com.cn/oauth/authorize?oauth_token='.$token['oauth_token'];
-        $authorise_url = $oauth->getAuthorizeURL( $token['oauth_token'] ,false , BASE_URL.'oauth');
-		header("Location: $authorise_url");
-	}
-}
+    $_SESSION['user']['username'] = $user["id"];
+    $_SESSION['user']['screen_name'] = $user["screen_name"];
 
-function user_oauth_sign(&$url, &$args = false) {
-	require_once 'OAuth.php';
-
-	$method = $args !== false ? 'POST' : 'GET';
-
-	// Move GET parameters out of $url and into $args
-	if (preg_match_all('#[?&]([^=]+)=([^&]+)#', $url, $matches, PREG_SET_ORDER)) {
-		foreach ($matches as $match) {
-			$args[$match[1]] = $match[2];
-		}
-		$url = substr($url, 0, strpos($url, '?'));
-	}
-
-	$sig_method = new OAuthSignatureMethod_HMAC_SHA1();
-	$consumer = new OAuthConsumer(OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET);
-	$token = NULL;
-
-	if (($oauth_token = $_GET['oauth_token']) && $_SESSION['oauth_request_token_secret']) {
-		$oauth_token_secret = $_SESSION['oauth_request_token_secret'];
-	} else {
-		list($oauth_token, $oauth_token_secret) = explode('|', $GLOBALS['user']['password']);
-	}
-	if ($oauth_token && $oauth_token_secret) {
-		$token = new OAuthConsumer($oauth_token, $oauth_token_secret);
-	}
-
-	$request = OAuthRequest::from_consumer_and_token($consumer, $token, $method, $url, $args);
-	$request->sign_request($sig_method, $consumer, $token);
-
-	switch ($method) {
-		case 'GET':
-			$url = $request->to_url();
-			$args = false;
-			return;
-		case 'POST':
-			$url = $request->get_normalized_http_url();
-			$args = $request->to_postdata();
-			return;
-	}
+    header('Location: '. BASE_URL);
 }
 
 function user_ensure_authenticated() {
@@ -100,34 +46,16 @@ function user_ensure_authenticated() {
 
 function user_logout() {
 	unset($GLOBALS['user']);
+    $_SESSION = NULL;
 	setcookie('USER_AUTH', '', time() - 3600, '/');
 }
 
 function user_is_authenticated() {
-  if (!isset($GLOBALS['user'])) {
-    if(array_key_exists('USER_AUTH', $_COOKIE)) {
-      _user_decrypt_cookie($_COOKIE['USER_AUTH']);
-    } else {
-      $GLOBALS['user'] = array();
-    }
+  if (!($GLOBALS['user']['screen_name'])) {
+      $GLOBALS['user'] = $_SESSION['user'];
   }
-  if (!$GLOBALS['user']['username']) {
-    if ($_POST['username'] && $_POST['password']) {
-      #$bt = debug_backtrace();
-      #file_put_contents('/tmp/debug_backtrace', var_export($bt,true));
-
-      $GLOBALS['user']['username'] = trim($_POST['username']);
-      $GLOBALS['user']['password'] = $_POST['password'];
-      $GLOBALS['user']['type'] = 'normal';
-      $user = twitter_process('http://api.t.sina.com.cn/account/verify_credentials.json');
-      $GLOBALS['user']['screen_name'] = $user->screen_name;
-      
-      _user_save_cookie($_POST['stay-logged-in'] == 'yes');
-      header('Location: '. BASE_URL);
-      exit();
-    } else {
+  if (!$GLOBALS['user']['screen_name']) {
       return false;
-    }
   }
   return true;
 }
@@ -182,8 +110,20 @@ function _user_decrypt_cookie($crypt_text) {
 }
 
 function theme_login() {
-  return '
-<p><strong><a href="oauth">Sign in with Sina/OAuth</a></strong><br />
+    // Generate AUTH token request
+    $oauth = new WeiboOAuth(OAUTH_CONSUMER_KEY,OAUTH_CONSUMER_SECRET);
+    $token = $oauth->getRequestToken();
+    if ($oauth->http_code != "200") {
+        echo "http_code" . $oauth->http_code; exit;
+    }
+
+    // redirect user to authorisation URL
+    $authorise_url = $oauth->getAuthorizeURL( $token['oauth_token'] ,false , BASE_URL.'oauth');
+
+    $_SESSION['keys'] = $token;
+    // file_put_contents("/tmp/dabrlog", "token:" . json_encode($token)." $authorise_url \n", FILE_APPEND);
+    return '
+<p><strong><a href="' . $authorise_url . '">Sign in with Sina/OAuth</a></strong><br />
 Note: Sina\'s OAuth page isn\'t very mobile friendly.</p>
   
 <p><b>Registration steps:</b></p>
