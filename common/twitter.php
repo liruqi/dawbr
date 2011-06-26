@@ -250,7 +250,7 @@ function twitter_upload_page($query) {
 			'status' => stripslashes($_POST['message']),
 			//'username' => user_current_username(),
 			//'password' => $GLOBALS['user']['password'],
-		));
+		), "post");
 		if (preg_match('#thumbnail_pic>(.*)</thumbnail_pic#', $response, $matches)) {
 			$id = $matches[1];
 			twitter_refresh("upload/confirm/$id");
@@ -271,15 +271,16 @@ function endsWith( $str, $sub ) {
 	return ( substr( $str, strlen( $str ) - strlen( $sub ) ) == $sub );
 }
 
-function twitter_process($url, $post_data = false) {
+function twitter_process($url, $post_data = false, $method = "get") {
 	$url = str_replace("https://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
 	$url = str_replace("http://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
 	$url = str_replace("://twitter.com/", "://api.t.sina.com.cn/", $url);
 	file_put_contents('/tmp/session', var_export($_SESSION, true)."\n", FILE_APPEND);
     $c = new WeiboClient(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET , $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
     $c->oauth->decode_json = false;
-    if($post_data === false) {
-        $response = $c->oauth->get($url);
+
+    if($method === "get") {
+        $response = $c->oauth->get($url, $post_data);
     } else {
         $response = $c->oauth->post($url, $post_data);
     }
@@ -710,7 +711,7 @@ function twitter_update() {
 		// $post_data['display_coordinates'] = 'false';
 		}
 		setcookie_year('geo', $geo);
-		$b = twitter_process($request, $post_data);
+		$b = twitter_process($request, $post_data, "post");
 	}
 	twitter_refresh($_POST['from'] ? $_POST['from'] : '');
 }
@@ -816,7 +817,7 @@ function twitter_directs_page($query) {
 			$to = trim(stripslashes($_POST['to']));
 			$message = trim(stripslashes($_POST['message']));
 			$request = API_URL.'direct_messages/new.json';
-			twitter_process($request, array('screen_name' => $to, 'text' => $message));
+			twitter_process($request, array('screen_name' => $to, 'text' => $message), 'post');
 			twitter_refresh('directs/sent');
 
 		case 'sent':
@@ -913,7 +914,7 @@ function twitter_user_page($query) {
 		
 		if (isset($user->status)) {
 			$request = "http://twitter.com/statuses/user_timeline.json?screen_name={$screen_name}&page=".intval($_GET['page']);
-			$tl = twitter_process($request);
+			$tl = twitter_process($request, array("screen_name"=>$screen_name, "page"=>intval($_GET['page'])));
 			$tl = twitter_standard_timeline($tl, 'user');
 			$content .= theme('timeline', $tl);
 		}
@@ -1249,14 +1250,13 @@ function preg_match_one($pattern, $subject, $flags = NULL) {
 
 function twitter_user_info($username = null) {
 	if (!$username) {
-		//error_log("twitter_user_info");
-//	 debug_print_backtrace	();
-return null;//		$username = user_current_username();
+        debug_print_backtrace	();
+        exit;
 	}
  
-//	$username_e = urlencode($username); 
-	$request = "http://twitter.com/users/show.json?screen_name=$username";
-	$user = twitter_process($request);
+	#$username = urlencode($username); 
+    $request = "http://twitter.com/users/show.json";
+	$user = twitter_process($request, array("screen_name"=>$username));
 	return $user;
 }
 
