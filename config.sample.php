@@ -77,4 +77,11 @@ function googleAnalyticsGetImageUrl() {
 	return str_replace("&", "&amp;", $url);
 }
 
-?>
+if (stristr($_SERVER["HTTP_HOST"], "sinaapp.com") === "sinaapp.com") {
+    $uri = $_SERVER["REQUEST_URI"];
+    list($action, $param) = explode("?", $uri);
+    if ($param) {
+        parse_str($param, $_get);
+        foreach ($_get as $k => $v) if (!isset($_GET[$k])) $_GET[$k]=$v;
+    }
+}
