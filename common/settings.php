@@ -116,7 +116,7 @@ function settings_page($args) {
 	
 	// Allow users to choose a Dabr password if accounts are enabled
 	if (MYSQL_USERS == 'ON' && user_is_authenticated()) {
-		$content .= '<fieldset><legend>Dabr account</legend><small>If you want to sign in to Dabr without going via Twitter.com in the future, create a password and we\'ll remember you.</small></p><p>Change Dabr password<br /><input type="password" name="newpassword" /><br /><small>Leave blank if you don\'t want to change it</small></fieldset>';
+		$content .= '<fieldset><legend>Dabr account</legend><small>If you want to sign in to Dabr without going via Weibo.com in the future, create a password and we\'ll remember you.</small></p><p>Change Dabr password<br /><input type="password" name="newpassword" /><br /><small>Leave blank if you don\'t want to change it</small></fieldset>';
 	}
 	
 	$content .= '<p><input type="submit" value="Save" /></p></form>';
