@@ -1,9 +1,5 @@
 This code was originally hacked by Tim Yang (http://timyang.net/), and once published in http://open.t.sina.com.cn. It was removed afterward.
 
-You may still download the orginal version here: http://60.28.113.74:8000/dabr.weibo.tgz
-
-You may try dabr-for-weibo here: http://twittercn.sinaapp.com/
-
 Sample nginx configure:
 
 156 server {
