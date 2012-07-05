@@ -762,7 +762,7 @@ function twitter_cmts_page($query) {
 	$action = strtolower(trim($query[1]));
 	switch ($action) {
 	case 'by_me':
-	$request = 'http://twitter.com/statuses/comments_by_me.json?page='.intval($_GET['page']);
+	$request = 'http://twitter.com/statuses/comments_by_me.json';
 	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
 	$tl = twitter_standard_timeline($tl, 'cmts');
 	$content = theme_cmts_menu();
@@ -771,7 +771,7 @@ function twitter_cmts_page($query) {
 
 	case '':
 	case 'to_me':
-	$request = 'http://twitter.com/statuses/comments_to_me.json?page='.intval($_GET['page']);
+	$request = 'http://twitter.com/statuses/comments_to_me.json';
 	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
 	$tl = twitter_standard_timeline($tl, 'cmts');
 	$content = theme_cmts_menu();
@@ -780,8 +780,8 @@ function twitter_cmts_page($query) {
 
  case 'reply': // reply comment
 	$rid = strtolower(trim($query[2]));
-	$request = 'http://twitter.com/statuses/comments_by_me.json?page='.intval($_GET['page']);
-	$tl = twitter_process($request);
+	$request = 'http://twitter.com/statuses/comments_by_me.json';
+	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
 	$tl = twitter_standard_timeline($tl, 'cmts');
 	$content = theme_cmts_menu();
 	$content .= theme('timeline', $tl);
@@ -885,8 +885,8 @@ function twitter_search_page() {
 function twitter_search($search_query) {
 	$page = (int) $_GET['page'];
 	if ($page == 0) $page = 1;
-	$request = 'http://api.t.sina.com.cn/search.json?q=' . urlencode($search_query).'&page='.$page;
-	$tl = twitter_process($request);
+	$request = 'http://api.weibo.com/2/search/topics.json?q=' . urlencode($search_query).'&page='.$page;
+	$tl = twitter_process($request, array('q'=>urlencode($search_query), 'page'=>$page));
 	$tl = twitter_standard_timeline($tl->results, 'search');
 	return $tl;
 }
