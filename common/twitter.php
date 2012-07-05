@@ -750,8 +750,8 @@ function twitter_public_page() {
 }
 
 function twitter_replies_page() {
-	$request = API_URL.'statuses/mentions.json?page='.intval($_GET['page']);
-	$tl = twitter_process($request);
+	$request = API_URL.'statuses/mentions.json';
+	$tl = twitter_process($request, array("max_id"=>$_GET['max_id']));
 	$tl = twitter_standard_timeline($tl, 'mentions');
 	$content = theme('status_form');
 	$content .= theme('timeline', $tl);
@@ -763,7 +763,7 @@ function twitter_cmts_page($query) {
 	switch ($action) {
 	case 'by_me':
 	$request = 'http://twitter.com/statuses/comments_by_me.json?page='.intval($_GET['page']);
-	$tl = twitter_process($request);
+	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
 	$tl = twitter_standard_timeline($tl, 'cmts');
 	$content = theme_cmts_menu();
 	$content .= theme('timeline', $tl);
@@ -772,7 +772,7 @@ function twitter_cmts_page($query) {
 	case '':
 	case 'to_me':
 	$request = 'http://twitter.com/statuses/comments_to_me.json?page='.intval($_GET['page']);
-	$tl = twitter_process($request);
+	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
 	$tl = twitter_standard_timeline($tl, 'cmts');
 	$content = theme_cmts_menu();
 	$content .= theme('timeline', $tl);
