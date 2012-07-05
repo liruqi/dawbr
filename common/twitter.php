@@ -60,6 +60,7 @@ menu_register(array(
 	),
 	'public' => array(
 		'security' => true,
+		'hidden' => true,
 		'callback' => 'twitter_public_page',
 		'accesskey' => '4',
 	),
@@ -245,7 +246,7 @@ updateCount();
 
 function twitter_upload_page($query) {
 	if ($_POST['message']) {
-		$response = twitter_process('http://api.t.sina.com.cn/statuses/upload.xml', array(
+		$response = twitter_process('http://api.weibo.com/statuses/upload.xml', array(
 			'pic' => '@'.$_FILES['media']['tmp_name'],
 			'status' => stripslashes($_POST['message']),
 			//'username' => user_current_username(),
@@ -272,9 +273,9 @@ function endsWith( $str, $sub ) {
 }
 
 function twitter_process($url, $post_data = false, $method = "get") {
-	$url = str_replace("https://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
-	$url = str_replace("http://api.twitter.com/", "http://api.t.sina.com.cn/", $url);
-	$url = str_replace("://twitter.com/", "://api.t.sina.com.cn/", $url);
+	$url = str_replace("https://api.twitter.com/", "http://api.weibo.com/", $url);
+	$url = str_replace("http://api.twitter.com/", "http://api.weibo.com/", $url);
+	$url = str_replace("://twitter.com/", "://api.weibo.com/", $url);
 	file_put_contents('/tmp/session', var_export($_SESSION, true)."\n", FILE_APPEND);
     $c = new WeiboClient(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET , $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
     $c->oauth->decode_json = false;
@@ -685,8 +686,8 @@ function twitter_followers_page($query) {
 		$user = $GLOBALS['user']['screen_name'];
 	}
 	$cursor = isset($_GET['cursor']) ? ($_GET['cursor']) : -1;
-	$request = API_URL . "statuses/followers/{$user}.json?cursor=".$cursor;
-	$tl = twitter_process($request);
+	$request = API_URL . "2/friendships/followers.json?cursor=".$cursor;
+	$tl = twitter_process($request, array('cursor'=>$cursor, 'screen_name'=>$user));
 	$content = theme('followers', $tl);
 	theme('page', 'Followers', $content);
 }
