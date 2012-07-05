@@ -278,7 +278,7 @@ function twitter_process($url, $post_data = false, $method = "get") {
 	file_put_contents('/tmp/session', var_export($_SESSION, true)."\n", FILE_APPEND);
     $c = new WeiboClient(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET , $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
     $c->oauth->decode_json = false;
-
+	//file_put_contents('/tmp/dabr.log', $method." ".$url." ".json_encode($post_data)."\n", FILE_APPEND);
     if($method === "get") {
         $response = $c->oauth->get($url, $post_data);
     } else {
@@ -954,18 +954,19 @@ function twitter_home_page() {
 	user_ensure_authenticated();
 
 	$request = API_URL.'statuses/home_timeline.json?count=30';
-
+	$postdata = array();
 	if ($_GET['max_id'])
 	{
-		$request .= '&max_id='.$_GET['max_id'];
+		$postdata = array('max_id'=>$_GET['max_id']);
 	}
 
 	if ($_GET['since_id'])
 	{
-		$request .= '&since_id='.$_GET['since_id'];
+		$postdata = array_merge($postdata, array('since_id='=>$_GET['since_id']));
 	}
+
 	//echo $request;
-	$tl = twitter_process($request);
+	$tl = twitter_process($request, $postdata);
 	$tl = twitter_standard_timeline($tl, 'friends');
 	$content = theme('status_form');
 	$content .= theme('timeline', $tl);
@@ -1529,4 +1530,3 @@ function pluralise($word, $count, $show = FALSE) {
 	if($show) $word = "{$count} {$word}";
 	return $word . (($count != 1) ? 's' : '');
 }
-?>
