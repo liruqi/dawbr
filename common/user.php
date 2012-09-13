@@ -8,7 +8,7 @@ menu_register(array(
 ));
 
 function user_oauth() {
-    if (!isset($_GET['oauth_verifier'])) {
+    if (!isset($_GET['code'])) {
         var_dump(debug_backtrace());
         $_SESSION = NULL;
         exit;
@@ -17,23 +17,31 @@ function user_oauth() {
 	// Flag forces twitter_process() to use OAuth signing
 	$GLOBALS['user']['type'] = 'oauth';
 
-    $o = new WeiboOAuth(OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET, $_SESSION['keys']['oauth_token'] , $_SESSION['keys']['oauth_token_secret']);
+    $o = new SaeTOAuthV2(OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET);
     // Generate ACCESS token request
-    $last_key = $o->getAccessToken($_REQUEST['oauth_verifier']);
-
+    $last_key = $o->getAccessToken('code',
+       array('code'=>$_GET['code'], 'redirect_uri'=>BASE_URL.'oauth') 
+    );
+    if (! $last_key) {
+        var_dump(debug_backtrace());
+        $_SESSION = NULL;
+        exit;
+    }
     // file_put_contents("/tmp/dabrlog", "getAccessToken: " . json_encode($last_key)."var {$_REQUEST['oauth_verifier']} \n", FILE_APPEND);
     // Store ACCESS tokens in COOKIE
 
-    $_SESSION['last_key'] = $last_key;
+    $_SESSION['token'] = $last_key;
+    setcookie( 'weibojs_'.$o->client_id, http_build_query($last_key) );
 
-    $c = new WeiboClient(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET, $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
-    $user = $c->verify_credentials();
-    // Fetch the user's screen name with a quick API call
+    $c = new SaeTClientV2( OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET , $_SESSION['token']['access_token'] );
+    $uid_get = $c->get_uid();
+    $uid = $uid_get['uid'];
+    $user = $c->show_user_by_id( $uid);//根据ID获取用户等基本信息
 
-    $_SESSION['user']['username'] = $user["id"];
-    $_SESSION['user']['screen_name'] = $user["screen_name"];
-
-    header('Location: '. BASE_URL);
+       $_SESSION['user']['username'] = $user["id"];
+       $_SESSION['user']['screen_name'] = $user["screen_name"];
+    echo '<html>Welcome'.$user["screen_name"].',<a href="/">Home</a><br /><a href="/sdk/weibolist.php">Test</a></html>';
+    exit;
 }
 
 function user_ensure_authenticated() {
@@ -111,14 +119,10 @@ function _user_decrypt_cookie($crypt_text) {
 
 function theme_login() {
     // Generate AUTH token request
-    $oauth = new WeiboOAuth(OAUTH_CONSUMER_KEY,OAUTH_CONSUMER_SECRET);
-    $token = $oauth->getRequestToken();
-    if ($oauth->http_code != "200") {
-        echo "http_code" . $oauth->http_code; exit;
-    }
+    $oauth = new SaeTOAuthV2(OAUTH_CONSUMER_KEY,OAUTH_CONSUMER_SECRET);
 
     // redirect user to authorisation URL
-    $authorise_url = $oauth->getAuthorizeURL( $token['oauth_token'] ,false , BASE_URL.'oauth');
+    $authorise_url = $oauth->getAuthorizeURL( BASE_URL.'oauth');
 
     $_SESSION['keys'] = $token;
     // file_put_contents("/tmp/dabrlog", "token:" . json_encode($token)." $authorise_url \n", FILE_APPEND);
