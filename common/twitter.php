@@ -498,8 +498,8 @@ function format_interval($timestamp, $granularity = 2) {
 function twitter_status_page($query) {
 	$id = (string) $query[1];
 	if (is_numeric($id)) {
-		$request = API_URL."statuses/show/{$id}.json";
-		$status = twitter_process($request);
+		$request = "statuses/show";
+		$status = twitter_process($request, array('id'=>$id));
 		$content = theme('status', $status);
 		if (!$status->user->protected) {
 			$thread = twitter_thread_timeline($id);
@@ -718,10 +718,10 @@ function twitter_retweet($query) {
 	twitter_ensure_post_action();
 	$id = $query[1];
 	if (is_numeric($id)) {
-		$request = API_URL.'statuses/retweet/'.$id.'.xml';
+		$request = 'statuses/repost';
 		$status = twitter_url_shorten(stripslashes(trim($_POST['status'])));
-		$post_data = array('source' => 'OAUTH_CONSUMER_KEY', 'status' => $status);
-		twitter_process($request, $post_data);
+		$post_data = array('source' => 'OAUTH_CONSUMER_KEY', 'status' => $status, 'id'=>$id);
+		twitter_process($request, $post_data, 'POST');
 	}
 	twitter_refresh($_POST['from'] ? $_POST['from'] : '');
 }

@@ -37,10 +37,14 @@ function user_oauth() {
     $uid_get = $c->get_uid();
     $uid = $uid_get['uid'];
     $user = $c->show_user_by_id( $uid);//根据ID获取用户等基本信息
-
+	if (empty($user["id"])) {
+	var_dump(debug_backtrace());
+exit;
+	}
        $_SESSION['user']['username'] = $user["id"];
        $_SESSION['user']['screen_name'] = $user["screen_name"];
-    echo '<html>Welcome'.$user["screen_name"].',<a href="/">Home</a><br /><a href="/sdk/weibolist.php">Test</a></html>';
+    #echo '<html>Welcome'.$user["screen_name"].',<a href="/">Home</a><br /><a href="/sdk/weibolist.php">Test</a></html>';
+header("Location: ".BASE_URL);
     exit;
 }
 
