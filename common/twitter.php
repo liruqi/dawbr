@@ -273,11 +273,12 @@ function endsWith( $str, $sub ) {
 }
 
 function twitter_process($url, $post_data = false, $method = "get") {
-	$url = str_replace("https://api.twitter.com/", "http://api.weibo.com/", $url);
-	$url = str_replace("http://api.twitter.com/", "http://api.weibo.com/", $url);
-	$url = str_replace("://twitter.com/", "://api.weibo.com/", $url);
+	$url = str_replace("https://api.twitter.com/", "", $url);
+	$url = str_replace("http://api.twitter.com/", "", $url);
 	file_put_contents('/tmp/session', var_export($_SESSION, true)."\n", FILE_APPEND);
-    $c = new WeiboClient(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET , $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
+    #$c = new WeiboClient(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET , $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
+    $c = new SaeTClientV2(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET , $_SESSION['token']['access_token']) ;
+
     $c->oauth->decode_json = false;
 	//file_put_contents('/tmp/dabr.log', $method." ".$url." ".json_encode($post_data)."\n", FILE_APPEND);
     if($method === "get") {
@@ -303,6 +304,7 @@ function twitter_process($url, $post_data = false, $method = "get") {
 			$result = json_decode($response);
 			$result = $result->error ? $result->error : $response;
 			if (strlen($result) > 500) $result = 'Something broke on Twitter\'s end.';
+			$_SESSION = array();
 			theme('error', "<h2>An error occured while calling the Twitter API</h2><p>{$c->oauth->http_info['http_code']}: {$result}</p><hr><p>$url</p>");
 	}
 }
@@ -751,9 +753,9 @@ function twitter_public_page() {
 }
 
 function twitter_replies_page() {
-	$request = API_URL.'statuses/mentions.json';
+	$request = 'statuses/mentions';
 	$tl = twitter_process($request, array("max_id"=>$_GET['max_id']));
-	$tl = twitter_standard_timeline($tl, 'mentions');
+	$tl = twitter_standard_timeline($tl->statuses, 'mentions');
 	$content = theme('status_form');
 	$content .= theme('timeline', $tl);
 	theme('page', 'Replies', $content);
@@ -763,18 +765,18 @@ function twitter_cmts_page($query) {
 	$action = strtolower(trim($query[1]));
 	switch ($action) {
 	case 'by_me':
-	$request = 'http://twitter.com/statuses/comments_by_me.json';
+	$request = 'comments/by_me';
 	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
-	$tl = twitter_standard_timeline($tl, 'cmts');
+	$tl = twitter_standard_timeline($tl->statuses, 'cmts');
 	$content = theme_cmts_menu();
 	$content .= theme('timeline', $tl);
 	theme('page', 'Comments', $content);
 
 	case '':
 	case 'to_me':
-	$request = 'http://twitter.com/statuses/comments_to_me.json';
+	$request = 'comments/to_me';
 	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
-	$tl = twitter_standard_timeline($tl, 'cmts');
+	$tl = twitter_standard_timeline($tl->statuses, 'cmts');
 	$content = theme_cmts_menu();
 	$content .= theme('timeline', $tl);
 	theme('page', 'Comments', $content);
@@ -914,9 +916,10 @@ function twitter_user_page($query) {
 		$content .= theme('user_header', $user);
 		
 		if (isset($user->status)) {
-			$request = "http://twitter.com/statuses/user_timeline.json?screen_name={$screen_name}&page=".intval($_GET['page']);
-			$tl = twitter_process($request, array("screen_name"=>$screen_name, "page"=>intval($_GET['page'])));
-			$tl = twitter_standard_timeline($tl, 'user');
+			$request = "statuses/user_timeline";
+			$postdata = array("screen_name"=>$screen_name);
+			$tl = twitter_process($request, array_merge($postdata,$_GET));
+			$tl = twitter_standard_timeline($tl->statuses, 'user');
 			$content .= theme('timeline', $tl);
 		}
 		theme('page', "User {$screen_name}", $content);
@@ -954,8 +957,8 @@ function twitter_mark_favourite_page($query) {
 function twitter_home_page() {
 	user_ensure_authenticated();
 
-	$request = API_URL.'statuses/home_timeline.json?count=30';
-	$postdata = array();
+	$request = 'statuses/home_timeline';
+	$postdata = array('count'=>50,'page'=>1,'base_app'=>0,'feature'=>0);
 	if ($_GET['max_id'])
 	{
 		$postdata = array('max_id'=>$_GET['max_id']);
@@ -967,8 +970,8 @@ function twitter_home_page() {
 	}
 
 	//echo $request;
-	$tl = twitter_process($request, $postdata);
-	$tl = twitter_standard_timeline($tl, 'friends');
+    $tl = twitter_process($request, $postdata);
+	$tl = twitter_standard_timeline($tl->statuses, 'friends');
 	$content = theme('status_form');
 	$content .= theme('timeline', $tl);
 	theme('page', 'Home', $content);
@@ -1117,7 +1120,7 @@ function twitter_date($format, $timestamp = null) {
 
 function twitter_standard_timeline($feed, $source) {
 	$output = array();
-	#file_put_contents("/tmp/twitter_standard_timeline.dump", var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true). " <==== $source\n", FILE_APPEND);
+	file_put_contents("/tmp/twitter_standard_timeline.dump", var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true). " <==== $source\n", FILE_APPEND);
 	if (!is_array($feed) && $source != 'thread') return $output;
 	switch ($source) {
 		case 'friends':
@@ -1257,7 +1260,7 @@ function twitter_user_info($username = null) {
 	}
  
 	#$username = urlencode($username); 
-    $request = "http://twitter.com/users/show.json";
+    $request = "users/show";
 	$user = twitter_process($request, array("screen_name"=>$username));
 	return $user;
 }
