@@ -48,11 +48,6 @@ menu_register(array(
 		'security' => true,
 		'callback' => 'twitter_mark_favourite_page',
 	),
-	'directs' => array(
-		'security' => true,
-		'callback' => 'twitter_directs_page',
-		'accesskey' => '2',
-	),
 	'search' => array(
 		'security' => true,
 		'callback' => 'twitter_search_page',
@@ -304,7 +299,7 @@ function twitter_process($url, $post_data = false, $method = "get") {
 			$result = json_decode($response);
 			$result = $result->error ? $result->error : $response;
 			if (strlen($result) > 500) $result = 'Something broke on Twitter\'s end.';
-			$_SESSION = array();
+			#$_SESSION = array();
 			theme('error', "<h2>An error occured while calling the Twitter API</h2><p>{$c->oauth->http_info['http_code']}: {$result}</p><hr><p>$url</p>");
 	}
 }
@@ -526,8 +521,8 @@ function twitter_thread_timeline($thread_id) {
 function twitter_retweet_page($query) {
 	$id = (string) $query[1];
 	if (is_numeric($id)) {
-		$request = API_URL."statuses/show/{$id}.json";
-		$tl = twitter_process($request);
+		$request = "statuses/show";
+		$tl = twitter_process($request, array('id'=>$id));
 		$content = theme('retweet', $tl);
 		theme('page', 'Retweet', $content);
 	}
@@ -832,8 +827,8 @@ function twitter_directs_page($query) {
 
 		case 'inbox':
 		default:
-			$request = API_URL.'direct_messages.json?page='.intval($_GET['page']);
-			$tl = twitter_standard_timeline(twitter_process($request), 'directs_inbox');
+			$request = 'direct_messages';
+			$tl = twitter_standard_timeline(twitter_process($request, $_GET), 'directs_inbox');
 			$content = theme_directs_menu();
 			$content .= theme('timeline', $tl);
 			theme('page', 'DM Inbox', $content);
