@@ -670,8 +670,8 @@ function twitter_friends_page($query) {
 		$user = $GLOBALS['user']['screen_name'];
 	}
 	$cursor = isset($_GET['cursor']) ? ($_GET['cursor']) : -1;
-	$request = API_URL . "statuses/friends/{$user}.json?cursor=".$cursor;
-	$tl = twitter_process($request);
+	$request =  "friendships/friends";
+	$tl = twitter_process($request, array('cursor'=>$cursor, 'screen_name'=>$user));
 	$content = theme('followers', $tl);
 	theme('page', 'Friends', $content);
 }
@@ -683,7 +683,7 @@ function twitter_followers_page($query) {
 		$user = $GLOBALS['user']['screen_name'];
 	}
 	$cursor = isset($_GET['cursor']) ? ($_GET['cursor']) : -1;
-	$request = API_URL . "2/friendships/followers.json?cursor=".$cursor;
+	$request =  "friendships/followers";
 	$tl = twitter_process($request, array('cursor'=>$cursor, 'screen_name'=>$user));
 	$content = theme('followers', $tl);
 	theme('page', 'Followers', $content);
@@ -1080,7 +1080,6 @@ function theme_user_header($user) {
 	$out.= " | <a href='friends/{$user->screen_name}'>{$user->friends_count} friends</a>
 | <a href='favourites/{$user->screen_name}'>{$user->favourites_count} favourites</a>
 | <a href='directs/create/{$user->screen_name}'>Direct Message</a>
-| <a href='lists/{$user->screen_name}'>Lists</a>
 </td></table>";
 	return $out;
 }
