@@ -327,9 +327,10 @@ class SaeTOAuthV2 {
 			return $this->http($url, 'GET');
 		default:
 			$headers = array();
-			if (!$multi && (is_array($parameters) || is_object($parameters)) ) {
-				$body = http_build_query($parameters);
-			} else {
+			#if (!$multi && (is_array($parameters) || is_object($parameters)) ) {
+			#	$body = http_build_query($parameters);
+			#} else 
+			{
 				$body = self::build_http_query_multi($parameters);
 				$headers[] = "Content-Type: multipart/form-data; boundary=" . self::$boundary;
 			}

@@ -254,7 +254,7 @@ function twitter_upload_page($query) {
 	} elseif ($query[1] == 'confirm') {
 		$content = "<p>Upload success.</p>";
 	} elseif ($query[1] == 'fail') {
-		$content = '<p>Twitpic upload failed. No idea why!</p>';
+		$content = '<p>Weibo pic upload failed. No idea why!</p>';
 	} else {
 		$content = '<form method="post" action="upload" enctype="multipart/form-data">Image <input type="file" name="media" /><br />Message: <textarea name="message" cols="80" rows="6"></textarea><br /><input type="submit" value="Upload" /></form>';
 	}
