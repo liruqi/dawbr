@@ -1139,18 +1139,12 @@ function twitter_standard_timeline($feed, $source) {
 				}
 			}
 		case 'favourites':
-			foreach ($feed as $status) {
-				$new = $status->status;
-				$new->from = $new->user;
-				unset($new->user);
-				$output[(string) $new->id] = $new;
-			}
-			return $output;
 		case 'public':
 		case 'mentions':
 		case 'user':
 			foreach ($feed as $status) {
 				$new = $status;
+				if ($source == 'favorites') $new = $status->status;
 				$new->from = $new->user;
 				unset($new->user);
 				$output[(string) $new->id] = $new;
