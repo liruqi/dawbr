@@ -241,20 +241,18 @@ updateCount();
 
 function twitter_upload_page($query) {
 	if ($_POST['message']) {
-		$response = twitter_process('http://api.weibo.com/statuses/upload.xml', array(
+		$response = twitter_process('statuses/upload', array(
 			'pic' => '@'.$_FILES['media']['tmp_name'],
 			'status' => stripslashes($_POST['message']),
-			//'username' => user_current_username(),
-			//'password' => $GLOBALS['user']['password'],
 		), "post");
-		if (preg_match('#thumbnail_pic>(.*)</thumbnail_pic#', $response, $matches)) {
+		if ( $response->mid) {
 			$id = $matches[1];
 			twitter_refresh("upload/confirm/$id");
 		} else {
 			twitter_refresh('upload/fail');
 		}
 	} elseif ($query[1] == 'confirm') {
-		$content = "<p>Upload success.</p><p><img src='{$id}' alt='' /></p>";
+		$content = "<p>Upload success.</p>";
 	} elseif ($query[1] == 'fail') {
 		$content = '<p>Twitpic upload failed. No idea why!</p>';
 	} else {
@@ -762,7 +760,7 @@ function twitter_cmts_page($query) {
 	case 'by_me':
 	$request = 'comments/by_me';
 	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
-	$tl = twitter_standard_timeline($tl->statuses, 'cmts');
+	$tl = twitter_standard_timeline($tl->comments, 'cmts');
 	$content = theme_cmts_menu();
 	$content .= theme('timeline', $tl);
 	theme('page', 'Comments', $content);
@@ -771,7 +769,7 @@ function twitter_cmts_page($query) {
 	case 'to_me':
 	$request = 'comments/to_me';
 	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
-	$tl = twitter_standard_timeline($tl->statuses, 'cmts');
+	$tl = twitter_standard_timeline($tl->comments, 'cmts');
 	$content = theme_cmts_menu();
 	$content .= theme('timeline', $tl);
 	theme('page', 'Comments', $content);
@@ -883,7 +881,7 @@ function twitter_search_page() {
 function twitter_search($search_query) {
 	$page = (int) $_GET['page'];
 	if ($page == 0) $page = 1;
-	$request = 'http://api.weibo.com/2/search/topics.json?q=' . urlencode($search_query).'&page='.$page;
+	$request = 'search/topics';
 	$tl = twitter_process($request, array('q'=>urlencode($search_query), 'page'=>$page));
 	$tl = twitter_standard_timeline($tl->results, 'search');
 	return $tl;
