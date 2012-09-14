@@ -929,9 +929,9 @@ function twitter_favourites_page($query) {
 		user_ensure_authenticated();
 		$screen_name = $GLOBALS['user']['screen_name'];
 	}
-	$request = API_URL."favorites/{$screen_name}.json?page=".intval($_GET['page']);
-	$tl = twitter_process($request);
-	$tl = twitter_standard_timeline($tl, 'favourites');
+	$request = "favorites";
+	$tl = twitter_process($request, $_GET);
+	$tl = twitter_standard_timeline($tl->favorites, 'favourites');
 	$content = theme('status_form');
 	$content .= theme('timeline', $tl);
 	theme('page', 'Favourites', $content);
@@ -1140,6 +1140,13 @@ function twitter_standard_timeline($feed, $source) {
 				}
 			}
 		case 'favourites':
+			foreach ($feed as $status) {
+				$new = $status->status;
+				$new->from = $new->user;
+				unset($new->user);
+				$output[(string) $new->id] = $new;
+			}
+			return $output;
 		case 'public':
 		case 'mentions':
 		case 'user':
