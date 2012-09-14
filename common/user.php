@@ -132,7 +132,7 @@ function theme_login() {
     // file_put_contents("/tmp/dabrlog", "token:" . json_encode($token)." $authorise_url \n", FILE_APPEND);
     return '
 <p><strong><a href="' . $authorise_url . '">Sign in with Sina/OAuth</a></strong><br />
-Note: Sina\'s OAuth page isn\'t very mobile friendly.</p>
+</p>
   
 <p><b>Registration steps:</b></p>
 

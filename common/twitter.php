@@ -176,8 +176,8 @@ function long_url($shortURL)
 
 
 function friendship_exists($user_a) {
-	$request = 'http://twitter.com/friendships/show.json?target_screen_name=' . $user_a;
-	$following = twitter_process($request);
+	$request = 'friendships/show';
+	$following = twitter_process($request, array('target_screen_name'=>$user_a));
 	
 	if ($following->relationship->target->following == 1) {
 		return true;
