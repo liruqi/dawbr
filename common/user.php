@@ -58,7 +58,7 @@ function user_ensure_authenticated() {
 
 function user_logout() {
 	unset($GLOBALS['user']);
-    $_SESSION = NULL;
+    $_SESSION = array();
 	setcookie('USER_AUTH', '', time() - 3600, '/');
 }
 
