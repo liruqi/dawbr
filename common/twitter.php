@@ -277,7 +277,7 @@ function twitter_process($url, $post_data = false, $method = "get") {
     if($method === "get") {
         $response = $c->oauth->get($url, $post_data);
     } else {
-        $response = $c->oauth->post($url, $post_data);
+        $response = $c->oauth->post($url, $post_data, isset($post_data['pic']));
     }
 	file_put_contents('/tmp/session', var_export($c->oauth->http_info, true)."\n", FILE_APPEND);
 	
@@ -293,11 +293,12 @@ function twitter_process($url, $post_data = false, $method = "get") {
 			theme('error', "<p>Error: Login credentials incorrect.</p><p>$url</p><pre>".var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true).'</pre>');
 		case 0:
 			theme('error', '<h2>Twitter timed out</h3><p>Dabr gave up on waiting for Twitter to respond. They\'re probably overloaded right now, try again in a minute.</p>'."<p>$url</p><pre>".var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true).'</pre>');
+		case 400:
+			$_SESSION = array();
 		default:
 			$result = json_decode($response);
 			$result = $result->error ? $result->error : $response;
 			if (strlen($result) > 500) $result = 'Something broke on Twitter\'s end.';
-			#$_SESSION = array();
 			theme('error', "<h2>An error occured while calling the Twitter API</h2><p>{$c->oauth->http_info['http_code']}: {$result}</p><hr><p>$url</p>");
 	}
 }
