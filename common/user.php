@@ -134,13 +134,6 @@ function theme_login() {
 <p><strong><a href="' . $authorise_url . '">Sign in with Sina/OAuth</a></strong><br />
 </p>
   
-<p><b>Registration steps:</b></p>
-
-<ol>
-	<li><a href="oauth">Sign in via weibo.com</a> from any computer</li>
-	<li>Visit the Dabr settings page to choose a password</li>
-	<li>Done! You can now benefit from accessing Twitter through Dabr from anywhere (even from computers that block Weibo.com)</li>
-</ol>
 ';
 }
 
