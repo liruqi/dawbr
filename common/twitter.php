@@ -288,9 +288,6 @@ function twitter_process($url, $post_data = false, $method = "get") {
 			$json = json_decode($response);
 			if ($json) return $json;
 			return $response;
-		case 401:
-			user_logout();
-			theme('error', "<p>Error: Login credentials incorrect.</p><p>$url</p><pre>".var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true).'</pre>');
 		case 0:
 			theme('error', '<h2>Twitter timed out</h3><p>Dabr gave up on waiting for Twitter to respond. They\'re probably overloaded right now, try again in a minute.</p>'."<p>$url</p><pre>".var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true).'</pre>');
 		case 400:
@@ -299,7 +296,7 @@ function twitter_process($url, $post_data = false, $method = "get") {
 			$result = json_decode($response);
 			$result = $result->error ? $result->error : $response;
 			if (strlen($result) > 500) $result = 'Something broke on Twitter\'s end.';
-			theme('error', "<h2>An error occured while calling the Twitter API</h2><p>{$c->oauth->http_info['http_code']}: {$result}</p><hr><p>$url</p>");
+			theme('error', "<h2>An error occured while calling the Twitter API</h2><p>{$c->oauth->http_info['http_code']}: {$result}</p><hr><p>$url</p><pre>".var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true).'</pre>');
 	}
 }
 
@@ -692,7 +689,7 @@ function twitter_update() {
 	twitter_ensure_post_action();
 	$status = twitter_url_shorten(stripslashes(trim($_POST['status'])));
 	if ($status) {
-		$request = API_URL.'statuses/update.json';
+		$request = 'statuses/update';
 		$post_data = array('source' => OAUTH_CONSUMER_KEY, 'status' => $status);
 		$in_reply_to_id = (string) $_POST['in_reply_to_id'];
 		if (is_numeric($in_reply_to_id)) {
@@ -940,9 +937,9 @@ function twitter_mark_favourite_page($query) {
 	$id = (string) $query[1];
 	if (!is_numeric($id)) return;
 	if ($query[0] == 'unfavourite') {
-		$request = API_URL."favorites/destroy/$id.json";
+		$request = "favorites/destroy/$id.json";
 	} else {
-		$request = API_URL."favorites/create/$id.json";
+		$request = "favorites/create/$id.json";
 	}
 	twitter_process($request, true);
 	twitter_refresh();
