@@ -725,7 +725,7 @@ function twitter_retweet($query) {
 	if (is_numeric($id)) {
 		$request = 'statuses/repost';
 		$status = twitter_url_shorten(stripslashes(trim($_POST['status'])));
-		$post_data = array('source' => 'OAUTH_CONSUMER_KEY', 'status' => $status, 'id'=>$id);
+		$post_data = array('status' => $status, 'id'=>$id);
 		twitter_process($request, $post_data, 'POST');
 	}
 	twitter_refresh($_POST['from'] ? $_POST['from'] : '');
@@ -737,11 +737,11 @@ function twitter_comment($query) {
 	// $id = $query[1];
 	$id = $_POST['id'];
 	if (is_numeric($id)) {
-		$request = 'http://twitter.com/statuses/comment.json';
-		$post_data = array('source' => 'appkey', 'comment' => $comment, 'id' => $id);
-		$b = twitter_process($request, $post_data);
+		$request = 'comments/create';
+		$post_data = array('comment' => $comment, 'id' => $id, 'comment_ori'=>1);
+		$b = twitter_process($request, $post_data, 'post');
 	}
-	twitter_refresh($_POST['from'] ? $_POST['from'] : '');
+	twitter_refresh("cmts/{$id}/1");
 }
 
 function twitter_public_page() {
@@ -792,10 +792,18 @@ function twitter_cmts_page($query) {
 
     default:
 	$request = "comments/show";
-	$tl = twitter_process($request, array("id"=>$action, "page"=>1+$_GET['page']));
-	$tl = twitter_standard_timeline($tl->comments, 'cmts');
-	#$content = theme_cmts_menu();
-	$content = theme('weibocomments', $tl);
+    if ($query[2] == "0") {
+        $request = "statuses/show";
+		$status = twitter_process($request, array('id'=>$action));
+		$content = theme('comments_status', $status);
+        $content .= theme_comment_form($action);
+    } else {
+        $tl = twitter_process($request, array("id"=>$action, "page"=>1+$_GET['page']));
+        $content = theme('comments_status', $tl->comments[0]->status);
+        $content .= theme_comment_form($action);
+        $tl = twitter_standard_timeline($tl->comments, 'cmts');
+        $content .= theme('weibocomments', $tl);
+    }
 	theme('page', 'Comments', $content);
 	}
 }
@@ -995,8 +1003,30 @@ function theme_status_form($text = '', $in_reply_to_id = NULL) {
 	}
 }
 
-function theme_status($status) {
+function theme_comment_form($in_reply_to_id, $text = '') {
+	if (user_is_authenticated()) {
+		return "<form method='post' action='twitter-comment'><input name='comment' value='{$text}' maxlength='140' /> <input name='id' value='{$in_reply_to_id}' type='hidden' /><input type='submit' value='Comment' /></form>";
+	}
+}
 
+function theme_comments_status($status) {
+	$time_since = theme('status_time_link', $status, false);
+	$parsed = twitter_parse_tags($status->text);
+	$avatar = theme('avatar', $status->user->profile_image_url);
+
+	$out = "<div class='timeline'>\n";
+	$out .= " <div class='tweet odd'>\n";
+	$out .= "	<span class='avatar'>$avatar</span>\n";
+	$out .= "	<span class='status shift'><b><a href='user/{$status->user->screen_name}'>{$status->user->screen_name}</a></b> $time_since<br />$parsed</span>\n";
+	$out .= " </div>\n";
+	$out .= "</div>\n";
+	if (user_is_current_user($status->user->screen_name)) {
+		$out .= "<form action='delete/{$status->id}' method='post'><input type='submit' value='Delete without confirmation' /></form>";
+	}
+	return $out;
+}
+
+function theme_status($status) {
 	$time_since = theme('status_time_link', $status);
 	$parsed = twitter_parse_tags($status->text);
 	$avatar = theme('avatar', $status->user->profile_image_url);
@@ -1107,6 +1137,8 @@ function theme_status_time_link($status, $is_link = true) {
 	}
 	if ($is_link)
 		$out = "<a href='status/{$status->id}' class='time'>$out</a>";
+    else 
+        $out = "<span class='time'>$out</span>";
 	return $out;
 }
 
@@ -1270,7 +1302,7 @@ function theme_weibocomments($feed)
 			$srctext = twitter_parse_tags($status->status->text);
 			if ($status->status->thumbnail_pic)
 				$srctext .= "<br/> <a href='{$status->status->original_pic}' target=_blank><img src='{$status->status->thumbnail_pic}' /></a> <br />";
-			$link = theme('status_time_link', $status, !$status->is_direct);
+			$link = theme('status_time_link', $status, false);
 			$actions = theme('action_icons', $status);
 			$avatar = theme('avatar', $status->from->profile_image_url);
 			$source2 = $status->status->source ? " from {$status->status->source}" : '';
@@ -1338,12 +1370,13 @@ function theme_timeline($feed)
 			$srctext = twitter_parse_tags($status->status->text);
 			if ($status->status->thumbnail_pic)
 				$srctext .= "<br/> <a href='{$status->status->original_pic}' target=_blank><img src='{$status->status->thumbnail_pic}' /></a> <br />";
-			$link = theme('status_time_link', $status, !$status->is_direct);
+			$link = theme('status_time_link', $status, false);
+			$link2 = theme('status_time_link', $status->status, !$status->is_direct);
 			$actions = theme('action_icons', $status);
 			$avatar = theme('avatar', $status->from->profile_image_url);
 			$source2 = $status->status->source ? " from {$status->status->source}" : '';
 			$row = array(
-				"<b><a href='user/{$status->from->screen_name}'>{$status->from->screen_name}</a></b> $actions $link<br />{$text} <br /> 原文<br/> <b> <a href='user/{$status->status->user->screen_name}'>{$status->status->user->screen_name}</a></b> <br />{$srctext} <small>$source2</small>",
+				"<b><a href='user/{$status->from->screen_name}'>{$status->from->screen_name}</a></b> $actions $link <br />{$text} <br /> 原文<br/> <b> <a href='user/{$status->status->user->screen_name}'>{$status->status->user->screen_name}</a></b> $link2 <br />{$srctext} <small>$source2</small>",
 			);
 		}
 		elseif($status->retweeted_status){
@@ -1497,6 +1530,7 @@ function theme_cursor($prev, $next) {
 		$query = $matches[0];
 	}
 	if ($prev and ($prev == $_GET["cursor"])) $prev -= 20;
+    $links = array();
 	if ($prev) $links[] = "<a href='{$_GET['q']}?cursor=".($prev)."$query' accesskey='9'>Prev</a> 9";
 	if ($next) $links[] = "<a href='{$_GET['q']}?cursor=".($next)."$query' accesskey='8'>Next</a> 8";
 	return '<p>'.implode(' | ', $links).'</p>';
@@ -1510,24 +1544,23 @@ function theme_action_icons($status) {
 	$geo = $status->geo;
 	$actions = array();
 
-	if (!$status->is_direct) {
-		$actions[] = theme('action_icon', "status/{$status->id}", 'images/reply.png', '@');
-	}
+
 	/*
 	if (!user_is_current_user($from)) {
 		$actions[] = theme('action_icon', "directs/create/{$from}", 'images/dm.png', 'DM');
 	}*/
 	if (!$status->is_direct) {
-		if ($status->favorited == '1') {
+		
+	if (!$status->status) {
+        if ($status->favorited == '1') {
 			$actions[] = theme('action_icon', "unfavourite/{$status->id}", 'images/star.png', 'UNFAV');
 		} else {
 			$actions[] = theme('action_icon', "favourite/{$status->id}", 'images/star_grey.png', 'FAV');
 		}
-	if (!$status->status) {
 		$actions[] = theme('action_icon', "retweet/{$status->id}", 'images/retweet.png', 'RT');
-		$actions[] = theme('action_icon', "cmts/{$status->id}", 'images/list.png', 'CMS');
+        $actions[] = theme('action_icon', "cmts/{$status->id}/{$status->comments_count}", 'images/list.png', 'CMS')."<span class='time'>{$status->comments_count}</span> ";
 	} else {
-		$actions[] = theme('action_icon', "recomment/{$status->id}", 'images/comments.gif', 'CMS');
+		//$actions[] = theme('action_icon', "recomment/{$status->id}", 'images/comments.gif', 'CMS');
 	}
 
 		if (user_is_current_user($from)) {
