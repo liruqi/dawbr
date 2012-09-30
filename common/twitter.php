@@ -48,11 +48,11 @@ menu_register(array(
 		'security' => true,
 		'callback' => 'twitter_mark_favourite_page',
 	),
-	'search' => array(
+	/*'search' => array(
 		'security' => true,
 		'callback' => 'twitter_search_page',
 		'accesskey' => '3',
-	),
+	),*/
 	'public' => array(
 		'security' => true,
 		'hidden' => true,
@@ -121,6 +121,11 @@ menu_register(array(
 		'hidden' => true,
 		'security' => true,
 		'callback' => 'twitter_comment_page',
+	),
+	'recomment' => array(
+		'hidden' => true,
+		'security' => true,
+		'callback' => 'weibo_recomment',
 	),
 	'flickr' => array(
 		'security' => true,
@@ -281,11 +286,12 @@ function twitter_process($url, $post_data = false, $method = "get") {
     }
 	file_put_contents('/tmp/session', var_export($c->oauth->http_info, true)."\n", FILE_APPEND);
 	
-	#file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
+	file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
 
 	switch( intval( $c->oauth->http_info['http_code'] ) ) {
 		case 200:
 			$json = json_decode($response);
+			file_put_contents("/tmp/api_response.dump",  "$response <==== $url\n", FILE_APPEND);
 			if ($json) return $json;
 			return $response;
 		case 0:
@@ -527,13 +533,22 @@ function twitter_retweet_page($query) {
 function twitter_comment_page($query) {
 	$id = (string) $query[1];
 	if (is_numeric($id)) {
+		$request = "comments/show_batch";
+		$tl = twitter_process($request, array("cids"=>$id));
+		$content = theme('comment', $tl[0]);
+		theme('page', 'Comment', $content);
+	}
+}
+
+function weibo_recomment($query) {
+	$id = (string) $query[1];
+	if (is_numeric($id)) {
 		$request = "http://twitter.com/statuses/show/{$id}.json";
 		$tl = twitter_process($request);
 		$content = theme('comment', $tl);
 		theme('page', 'Comment', $content);
 	}
 }
-
 /*
 function twitter_replycomment_page($query) {
 	$id = (string) $query[1];
@@ -937,11 +952,11 @@ function twitter_mark_favourite_page($query) {
 	$id = (string) $query[1];
 	if (!is_numeric($id)) return;
 	if ($query[0] == 'unfavourite') {
-		$request = "favorites/destroy/$id.json";
+		$request = "favorites/destroy";
 	} else {
-		$request = "favorites/create/$id.json";
+		$request = "favorites/create";
 	}
-	twitter_process($request, true);
+	twitter_process($request, array('id'=>$id),'post');
 	twitter_refresh();
 }
 
@@ -1023,7 +1038,7 @@ function theme_comment($status) {
 	$text = "@{$status->user->screen_name}: ";
 	$length = function_exists('mb_strlen') ? mb_strlen($text,'UTF-8') : strlen($text);
 	$from = substr($_SERVER['HTTP_REFERER'], strlen(BASE_URL));
-	$content = "<p>Sina style comment:</p><form action='twitter-comment/{$status->id}' method='post'><input type='hidden' name='id' value='$status->id' /><input type='hidden' name='from' value='$from' /><textarea name='comment' cols='50' rows='3' id='comment'>$text</textarea><br><input type='submit' value='Comment'><span id='remaining'>" . (140 - $length) ."</span></form>";
+	$content = "<p>{$status->user->screen_name}:{$status->text}</p><form action='twitter-comment/{$status->id}' method='post'><input type='hidden' name='id' value='$status->id' /><input type='hidden' name='from' value='$from' /><textarea name='comment' cols='50' rows='3' id='comment'>$text</textarea><br><input type='submit' value='Comment'><span id='remaining'>" . (140 - $length) ."</span></form>";
 	$content .= js_counter("status");
 				/*if($status->user->protected == 0){
 		$content.="<br />Or Twitter's new style retweets<br /><form action='twitter-retweet/{$status->id}' method='post'><input type='hidden' name='from' value='$from' /><input type='submit' value='Twitter Retweet'></form>";
@@ -1075,8 +1090,8 @@ function theme_user_header($user) {
 	$out .= " | <a href='confirm/spam/{$user->screen_name}/{$user->id}'>Report Spam</a>";
 	$out.= " | <a href='friends/{$user->screen_name}'>{$user->friends_count} friends</a>
 | <a href='favourites/{$user->screen_name}'>{$user->favourites_count} favourites</a>
-| <a href='directs/create/{$user->screen_name}'>Direct Message</a>
 </td></table>";
+// | <a href='directs/create/{$user->screen_name}'>Direct Message</a>
 	return $out;
 }
 
@@ -1110,7 +1125,6 @@ function twitter_date($format, $timestamp = null) {
 
 function twitter_standard_timeline($feed, $source) {
 	$output = array();
-	file_put_contents("/tmp/twitter_standard_timeline.dump", var_export(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true). " <==== $source\n", FILE_APPEND);
 	if (!is_array($feed) && $source != 'thread') return $output;
 	switch ($source) {
 		case 'friends':
@@ -1475,9 +1489,10 @@ function theme_action_icons($status) {
 	if (!$status->is_direct) {
 		$actions[] = theme('action_icon', "user/{$from}/reply/{$status->id}", 'images/reply.png', '@');
 	}
+	/*
 	if (!user_is_current_user($from)) {
 		$actions[] = theme('action_icon', "directs/create/{$from}", 'images/dm.png', 'DM');
-	}
+	}*/
 	if (!$status->is_direct) {
 		if ($status->favorited == '1') {
 			$actions[] = theme('action_icon', "unfavourite/{$status->id}", 'images/star.png', 'UNFAV');
