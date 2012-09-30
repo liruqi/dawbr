@@ -789,7 +789,7 @@ function twitter_cmts_page($query) {
 
  case 'reply': // reply comment
 	$rid = strtolower(trim($query[2]));
-	$request = 'http://twitter.com/statuses/comments_by_me.json';
+	$request = 'statuses/comments_by_me.json';
 	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
 	$tl = twitter_standard_timeline($tl, 'cmts');
 	$content = theme_cmts_menu();
@@ -797,11 +797,11 @@ function twitter_cmts_page($query) {
 	theme('page', 'Comments', $content);
 
 	default:
-	$request = "http://twitter.com/statuses/comments.json?id=$action&page=".intval($_GET['page']);
-	$tl = twitter_process($request);
-	$tl = twitter_standard_timeline($tl, 'cmts');
-	$content = theme_cmts_menu();
-	$content .= theme('timeline', $tl);
+	$request = "comments/show";
+	$tl = twitter_process($request, array("id"=>$action, "page"=>1+$_GET['page']));
+	$tl = twitter_standard_timeline($tl->comments, 'cmts');
+	#$content = theme_cmts_menu();
+	$content = theme('timeline', $tl);
 	theme('page', 'Comments', $content);
 	}
 }
@@ -1501,7 +1501,6 @@ function theme_action_icons($status) {
 		}
 	if (!$status->status) {
 		$actions[] = theme('action_icon', "retweet/{$status->id}", 'images/retweet.png', 'RT');
-		$actions[] = theme('action_icon', "comment/{$status->id}", 'images/comments.gif', 'CMT');
 		$actions[] = theme('action_icon', "cmts/{$status->id}", 'images/list.png', 'CMS');
 	} else {
 		$actions[] = theme('action_icon', "recomment/{$status->id}", 'images/comments.gif', 'CMS');
@@ -1521,7 +1520,7 @@ function theme_action_icons($status) {
 		$actions[] = theme('action_icon', "http://maps.google.com.hk/m?q={$lat},{$long}", 'images/map.png', 'MAP');
 	}
 	//Search for @ to a user
-	$actions[] = theme('action_icon',"search?query=%40{$from}",'images/q.png','?');
+	//$actions[] = theme('action_icon',"search?query=%40{$from}",'images/q.png','?');
 
 	return implode(' ', $actions);
 }
