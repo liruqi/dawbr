@@ -503,9 +503,6 @@ function twitter_status_page($query) {
 		$request = "statuses/show";
 		$status = twitter_process($request, array('id'=>$id));
 		$content = theme('status', $status);
-		if (!$status->user->protected) {
-			$thread = twitter_thread_timeline($id);
-		}
 		
 		theme('page', "Status $id", $content);
 	}
@@ -768,32 +765,32 @@ function twitter_cmts_page($query) {
 	$action = strtolower(trim($query[1]));
 	switch ($action) {
 	case 'by_me':
-	$request = 'comments/by_me';
-	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
-	$tl = twitter_standard_timeline($tl->comments, 'cmts');
-	$content = theme_cmts_menu();
-	$content .= theme('timeline', $tl);
-	theme('page', 'Comments', $content);
+	    $request = 'comments/by_me';
+        $tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
+        $tl = twitter_standard_timeline($tl->comments, 'cmts');
+        $content = theme_cmts_menu();
+        $content .= theme('timeline', $tl);
+        theme('page', 'Comments', $content);
 
 	case '':
 	case 'to_me':
-	$request = 'comments/to_me';
-	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
-	$tl = twitter_standard_timeline($tl->comments, 'cmts');
-	$content = theme_cmts_menu();
-	$content .= theme('timeline', $tl);
-	theme('page', 'Comments', $content);
+	    $request = 'comments/to_me';
+        $tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
+        $tl = twitter_standard_timeline($tl->comments, 'cmts');
+        $content = theme_cmts_menu();
+        $content .= theme('timeline', $tl);
+        theme('page', 'Comments', $content);
 
- case 'reply': // reply comment
-	$rid = strtolower(trim($query[2]));
-	$request = 'statuses/comments_by_me.json';
-	$tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
-	$tl = twitter_standard_timeline($tl, 'cmts');
-	$content = theme_cmts_menu();
-	$content .= theme('timeline', $tl);
-	theme('page', 'Comments', $content);
+    case 'reply': // reply comment
+        $rid = strtolower(trim($query[2]));
+        $request = 'statuses/comments_by_me.json';
+        $tl = twitter_process($request, array('max_id'=>$_GET['max_id']));
+        $tl = twitter_standard_timeline($tl, 'cmts');
+        $content = theme_cmts_menu();
+        $content .= theme('timeline', $tl);
+        theme('page', 'Comments', $content);
 
-	default:
+    default:
 	$request = "comments/show";
 	$tl = twitter_process($request, array("id"=>$action, "page"=>1+$_GET['page']));
 	$tl = twitter_standard_timeline($tl->comments, 'cmts');
@@ -1204,49 +1201,11 @@ function twitter_standard_timeline($feed, $source) {
 				$output[] = $new;
 			}
 			return $output;
-		
-		case 'thread':
-			// First pass: extract tweet info from the HTML
-			$html_tweets = explode('</li>', $feed);
-			foreach ($html_tweets as $tweet) {
-				$id = preg_match_one('#msgtxt(\d*)#', $tweet);
-				if (!$id) continue;
-				$output[$id] = (object) array(
-					'id' => $id,
-					'text' => strip_tags(preg_match_one('#</a>: (.*)</span>#', $tweet)),
-					'source' => preg_match_one('#>from (.*)</span>#', $tweet),
-					'from' => (object) array(
-						'id' => preg_match_one('#profile_images/(\d*)#', $tweet),
-						'screen_name' => preg_match_one('#twitter.com/([^"]+)#', $tweet),
-						'profile_image_url' => preg_match_one('#src="([^"]*)"#' , $tweet),
-					),
-					'to' => (object) array(
-						'screen_name' => preg_match_one('#@([^<]+)#', $tweet),
-					),
-					'created_at' => str_replace('about', '', preg_match_one('#info">\s(.*)#', $tweet)),
-				);
-			}
-			// Second pass: OPTIONALLY attempt to reverse the order of tweets
-			if (setting_fetch('reverse') == 'yes') {
-				$first = false;
-				foreach ($output as $id => $tweet) {
-					$date_string = str_replace('later', '', $tweet->created_at);
-					if ($first) {
-						$attempt = strtotime("+$date_string");
-						if ($attempt == 0) $attempt = time();
-						$previous = $current = $attempt - time() + $previous;
-					} else {
-						$previous = $current = $first = strtotime($date_string);
-					}
-					$output[$id]->created_at = date('r', $current);
-				}
-				$output = array_reverse($output);
-			}
-			return $output;
 
 		default:
 			echo "<h1>$source</h1><pre>";
-			print_r($feed); die();
+        debug_print_backtrace	();
+			die();
 	}
 }
 
@@ -1552,7 +1511,7 @@ function theme_action_icons($status) {
 	$actions = array();
 
 	if (!$status->is_direct) {
-		$actions[] = theme('action_icon', "user/{$from}/reply/{$status->id}", 'images/reply.png', '@');
+		$actions[] = theme('action_icon', "status/{$status->id}", 'images/reply.png', '@');
 	}
 	/*
 	if (!user_is_current_user($from)) {
