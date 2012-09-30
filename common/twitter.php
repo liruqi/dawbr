@@ -273,25 +273,25 @@ function endsWith( $str, $sub ) {
 function twitter_process($url, $post_data = false, $method = "get") {
 	$url = str_replace("https://api.twitter.com/", "", $url);
 	$url = str_replace("http://api.twitter.com/", "", $url);
-	file_put_contents('/tmp/session', var_export($_SESSION, true)."\n", FILE_APPEND);
+	if(FILE_IO) file_put_contents('/tmp/session', var_export($_SESSION, true)."\n", FILE_APPEND);
     #$c = new WeiboClient(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET , $_SESSION['last_key']['oauth_token'] , $_SESSION['last_key']['oauth_token_secret']);
     $c = new SaeTClientV2(OAUTH_CONSUMER_KEY , OAUTH_CONSUMER_SECRET , $_SESSION['token']['access_token']) ;
 
     $c->oauth->decode_json = false;
-	//file_put_contents('/tmp/dabr.log', $method." ".$url." ".json_encode($post_data)."\n", FILE_APPEND);
+	//if(FILE_IO) file_put_contents('/tmp/dabr.log', $method." ".$url." ".json_encode($post_data)."\n", FILE_APPEND);
     if($method === "get") {
         $response = $c->oauth->get($url, $post_data);
     } else {
         $response = $c->oauth->post($url, $post_data, isset($post_data['pic']));
     }
-	file_put_contents('/tmp/session', var_export($c->oauth->http_info, true)."\n", FILE_APPEND);
+	//if(FILE_IO) file_put_contents('/tmp/session', var_export($c->oauth->http_info, true)."\n", FILE_APPEND);
 	
-	file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
+	if(FILE_IO) file_put_contents('/tmp/urls', $url." ".user_type(). " ".json_encode($post_data)."\n", FILE_APPEND);
 
+	if(FILE_IO) file_put_contents("/tmp/api_response.dump",  "$response <==== $url\n", FILE_APPEND);
 	switch( intval( $c->oauth->http_info['http_code'] ) ) {
 		case 200:
 			$json = json_decode($response);
-			file_put_contents("/tmp/api_response.dump",  "$response <==== $url\n", FILE_APPEND);
 			if ($json) return $json;
 			return $response;
 		case 0:
@@ -506,10 +506,7 @@ function twitter_status_page($query) {
 		if (!$status->user->protected) {
 			$thread = twitter_thread_timeline($id);
 		}
-		if ($thread) {
-			$content .= '<p>And the experimental conversation view...</p>'.theme('timeline', $thread);
-			$content .= "<p>Don't like the thread order? Go to <a href='settings'>settings</a> to reverse it. Either way - the dates/times are not always accurate.</p>";
-		}
+		
 		theme('page', "Status $id", $content);
 	}
 }
@@ -801,7 +798,7 @@ function twitter_cmts_page($query) {
 	$tl = twitter_process($request, array("id"=>$action, "page"=>1+$_GET['page']));
 	$tl = twitter_standard_timeline($tl->comments, 'cmts');
 	#$content = theme_cmts_menu();
-	$content = theme('timeline', $tl);
+	$content = theme('weibocomments', $tl);
 	theme('page', 'Comments', $content);
 	}
 }
@@ -1128,7 +1125,7 @@ function twitter_standard_timeline($feed, $source) {
 	if (!is_array($feed) && $source != 'thread') return $output;
 	switch ($source) {
 		case 'friends':
-			#file_put_contents("/tmp/timeline.dump", var_export($feed, true));
+			#if(FILE_IO) file_put_contents("/tmp/timeline.dump", var_export($feed, true));
 			$retweeted_status_to_index = array();
 			foreach ($feed as $idx => $status) if ($status->retweeted_status) {
 				$retweeted_status_id = $status->retweeted_status->id;
@@ -1137,7 +1134,7 @@ function twitter_standard_timeline($feed, $source) {
 				}
 				$retweeted_status_to_index[$retweeted_status_id][] = $idx;
 			}
-			#file_put_contents("/tmp/retweeted_status_to_index.dump",var_export($retweeted_status_to_index, true));
+			#if(FILE_IO) file_put_contents("/tmp/retweeted_status_to_index.dump",var_export($retweeted_status_to_index, true));
 			foreach ($retweeted_status_to_index as $retweeted_status_id => $list) {
 				if (count($list) > 1) {
 					$retweet_users = array();
@@ -1270,6 +1267,74 @@ function twitter_user_info($username = null) {
 	return $user;
 }
 
+function theme_weibocomments($feed)
+{
+	if (count($feed) == 0) return theme('no_tweets');
+	$rows = array();
+	$page = menu_current_page();
+	$date_heading = false;
+	$first=0;
+
+	foreach ($feed as $status)
+	{
+		if ($first==0)
+		{
+			$since_id = $status->id;
+			$first++;
+		}
+		else
+		{
+			$max_id =	$status->id;
+			if ($status->original_id)
+			{
+				$max_id =	$status->original_id;
+			}
+		}
+		$time = strtotime($status->created_at);
+		if ($time > 0) {
+			$date = twitter_date('l jS F Y', strtotime($status->created_at));
+			if ($date_heading !== $date) {
+				$date_heading = $date;
+				$rows[] = array(array(
+					'data' => "<small><b>$date</b></small>",
+					'colspan' => 2
+				));
+			}
+		} else {
+			$date = $status->created_at;
+		}
+		if ($status->in_reply_to_status_id) {
+			$source .= " in reply to <a href='status/{$status->in_reply_to_status_id}'>{$status->in_reply_to_screen_name}</a>";
+		}
+		if($status->status) { // comment
+			$text = twitter_parse_tags($status->text);
+			$srctext = twitter_parse_tags($status->status->text);
+			if ($status->status->thumbnail_pic)
+				$srctext .= "<br/> <a href='{$status->status->original_pic}' target=_blank><img src='{$status->status->thumbnail_pic}' /></a> <br />";
+			$link = theme('status_time_link', $status, !$status->is_direct);
+			$actions = theme('action_icons', $status);
+			$avatar = theme('avatar', $status->from->profile_image_url);
+			$source2 = $status->status->source ? " from {$status->status->source}" : '';
+			$row = array(
+				"<b><a href='user/{$status->from->screen_name}'>{$status->from->screen_name}</a></b> $actions $link<br />{$text}",
+			);
+		}
+		
+		if ($page != 'user' && $avatar) {
+			array_unshift($row, $avatar);
+		}
+		if ($page != 'mentions' && twitter_is_reply($status)) {
+			$row = array('class' => 'reply', 'data' => $row);
+		}
+		$rows[] = $row;
+	}
+	$content = theme('table', array(), $rows, array('class' => 'timeline'));
+	
+		$links[] = "<a href='{$_GET['q']}?max_id=$max_id' accesskey='9'>Older</a> 9";
+		$content .= '<p>'.implode(' | ', $links).'</p>';
+	return $content;
+}
+
 function theme_timeline($feed)
 {
 	if (count($feed) == 0) return theme('no_tweets');
@@ -1399,7 +1464,7 @@ function theme_followers($feed, $hide_pagination = false) {
 		);
 	}
 	$content = theme('table', array(), $rows, array('class' => 'followers'));
-	#file_put_contents('/tmp/urls', $feed->previous_cursor.":". $feed->next_cursor."\n", FILE_APPEND);
+	#if(FILE_IO) file_put_contents('/tmp/urls', $feed->previous_cursor.":". $feed->next_cursor."\n", FILE_APPEND);
 	if (!$hide_pagination)
 		$content .= theme('cursor', $feed->previous_cursor, $feed->next_cursor);
 	return $content;
