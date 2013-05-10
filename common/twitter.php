@@ -1025,7 +1025,17 @@ function theme_status($status) {
 	$out .= " <div class='tweet odd'>\n";
 	$out .= "	<span class='avatar'>$avatar</span>\n";
 	$out .= "	<span class='status shift'><b><a href='user/{$status->user->screen_name}'>{$status->user->screen_name}</a></b> $time_since<br />$parsed</span>\n";
-	$out .= " </div>\n";
+    
+    if ($status->retweeted_status) {
+        $source2 = $status->retweeted_status->source ? " from {$status->retweeted_status->source}" : '';
+        $text = twitter_parse_tags($status->retweeted_status->text);
+        if ($status->retweeted_status->deleted) {
+            $text = "Original weibo is deleted. try <a target='_blank' href='https://freeweibo.com/weibo/{$status->retweeted_status->mid}'>freeweibo</a>.";
+        }
+        $row = "原文<br/> <b> <a href='user/{$status->retweeted_status->user->screen_name}'>{$status->retweeted_status->user->screen_name}</a></b> <br />{$text} <small>$source2</small>" ;
+        $out.= $row; 
+    }
+    $out .= " </div>\n";
 	$out .= "</div>\n";
 	if (user_is_current_user($status->user->screen_name)) {
 		$out .= "<form action='delete/{$status->id}' method='post'><input type='submit' value='Delete without confirmation' /></form>";
@@ -1378,7 +1388,9 @@ function theme_timeline($feed)
 			$text = twitter_parse_tags($status->retweeted_status->text);
 			if ($status->retweeted_status->thumbnail_pic)
 				$text .= "<br/> <a href='{$status->retweeted_status->original_pic}' target=_blank><img src='{$status->retweeted_status->thumbnail_pic}' /></a> <br />";
-
+            if ($status->retweeted_status->deleted) {
+                $text = "Original weibo is deleted. try <a target='_blank' href='https://freeweibo.com/weibo/{$status->retweeted_status->mid}'>freeweibo</a>.";
+            }
 			$source = $status->source ? " from {$status->source}" : '';
 			$source2 = $status->retweeted_status->source ? " from {$status->retweeted_status->source}" : '';
 			$row = array(

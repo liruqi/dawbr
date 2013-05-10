@@ -73,7 +73,7 @@ function user_is_authenticated() {
 }
 
 function user_current_username() {
-  return $GLOBALS['user']['username'];
+  return $GLOBALS['user']['screen_name'];
 }
 
 function user_is_current_user($username) {
