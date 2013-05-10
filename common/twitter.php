@@ -588,11 +588,11 @@ function twitter_follow_page($query) {
 	$user = $query[1];
 	if ($user) {
 		if($query[0] == 'follow'){
-			$request = API_URL."friendships/create/{$user}.json";
+			$request = "friendships/create";
 		} else {
-			$request = API_URL."friendships/destroy/{$user}.json";
+			$request = "friendships/destroy";
 		}
-		twitter_process($request, true);
+		twitter_process($request, array('screen_name'=>$user),'post');
 		twitter_refresh('friends');
 	}
 }
@@ -700,10 +700,7 @@ function twitter_update() {
 	if ($status) {
 		$request = 'statuses/update';
 		$post_data = array('source' => OAUTH_CONSUMER_KEY, 'status' => $status);
-		$in_reply_to_id = (string) $_POST['in_reply_to_id'];
-		if (is_numeric($in_reply_to_id)) {
-			$post_data['in_reply_to_status_id'] = $in_reply_to_id;
-		}
+		
 		// Geolocation parameters
 		list($lat, $long) = explode(',', $_POST['location']);
 		$geo = 'N';
@@ -905,22 +902,14 @@ function twitter_search($search_query) {
 function twitter_user_page($query) {
 	$screen_name = $query[1];
 	if ($screen_name) {
-		$content = '';
-		if ($query[2] == 'reply') {
-			$in_reply_to_id = (string) $query[3];
-			if (is_numeric($in_reply_to_id)) {
-				$content .= "<p>In reply to tweet ID $in_reply_to_id...</p>";
-			}
-		} else {
-			$in_reply_to_id = 0;
-		}
+		
 		$user = twitter_user_info($screen_name);
 		if (!user_is_current_user($user->screen_name)) {
 			$status = "@{$user->screen_name} ";
 		} else {
 			$status = '';
 		}
-		$content .= theme('status_form', $status, $in_reply_to_id);
+		$content = theme('status_form', $status);
 		$content .= theme('user_header', $user);
 		
 		if (isset($user->status)) {
@@ -997,9 +986,9 @@ function twitter_hashtag_page($query) {
 	}
 }
 
-function theme_status_form($text = '', $in_reply_to_id = NULL) {
+function theme_status_form($text = '') {
 	if (user_is_authenticated()) {
-		return "<form method='post' action='update'><input name='status' value='{$text}' maxlength='140' /> <input name='in_reply_to_id' value='{$in_reply_to_id}' type='hidden' /><input type='submit' value='Update' /></form>";
+		return "<form method='post' action='update'><input name='status' value='{$text}' maxlength='140' /> <input type='submit' value='Update' /></form>";
 	}
 }
 
@@ -1574,7 +1563,7 @@ function theme_action_icons($status) {
 		$latlong = $geo->coordinates;
 		$lat = $latlong[0];
 		$long = $latlong[1];
-		$actions[] = theme('action_icon', "http://maps.google.com.hk/m?q={$lat},{$long}", 'images/map.png', 'MAP');
+		$actions[] = theme('action_icon', "http://maps.google.com/maps?q={$lat},{$long}", 'images/map.png', 'MAP');
 	}
 	//Search for @ to a user
 	//$actions[] = theme('action_icon',"search?query=%40{$from}",'images/q.png','?');
